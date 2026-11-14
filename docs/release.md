@@ -21,6 +21,25 @@ The registry name `dsh-fallback-router` is available and reserved for this packa
 
 To publish to npm: configure a Trusted Publisher for `dsh-fallback-router` in the npm package settings, then set `NPM_PUBLISH=true`. Publishing is tokenless — the workflow exchanges the GitHub OIDC id-token for registry authentication and signs the build with `--provenance`; no `NPM_TOKEN` / `NODE_AUTH_TOKEN` secret is declared anywhere.
 
+### Bootstrap: the very first publish
+
+The npm settings page (and therefore the Trusted Publisher form) only exists once the package exists, so the first version has to be pushed once outside the workflow:
+
+```bash
+npm login                      # browser flow, on a maintainer's machine
+pnpm install && pnpm build     # dist/ must be current; `prepare` also runs this on publish
+npm publish --access public    # creates dsh-fallback-router@0.1.0
+```
+
+Then, in the npm package settings:
+
+1. **Trusted publishing → GitHub Actions**: owner `hongxin-y`, repository `dsh-fallback-router`, workflow `release.yml` (the workflow filename only, no path).
+2. Set the repository variable: `gh variable set NPM_PUBLISH --body true -R hongxin-y/dsh-fallback-router`.
+
+From that point on every merged `release vX.Y.Z` PR publishes by itself, with provenance and the version-derived dist-tag.
+
+If `pnpm` is not installed, `npm publish --ignore-scripts` works too — but only after a successful local `pnpm build`, because `prepare` is what rebuilds `dist/`.
+
 ## Release SOP
 
 ### 1. Write a changelog fragment
