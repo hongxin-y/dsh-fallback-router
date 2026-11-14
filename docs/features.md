@@ -1,6 +1,6 @@
 # Feature reference
 
-Capability reference for `dsh-llm-fallbacks` — what the plugin does at runtime,
+Capability reference for `dsh-llm-router` — what the plugin does at runtime,
 when it intervenes, and how each surface behaves. The landing-page overview is
 [README.md](../README.md); every configuration key, field and selector is in
 [docs/configuration.md](configuration.md).
@@ -220,7 +220,7 @@ The plugin ships **5 bundled generic subagent roles** out of the box — `review
 
 ## Agent presets (plugin composition)
 
-Agent **presets** are a dsh feature for composing plugins — they are declarative child-plugin lists a user can apply as a set, and they carry **no** model fields of their own. The fallbacks plugin needs no preset-specific configuration: because a preset composes plugins, the fallback applies **wherever the plugin's row is mounted** — a preset that includes the `dsh-llm-fallbacks` row gives that preset's sessions the same chains and roles configured for the plugin.
+Agent **presets** are a dsh feature for composing plugins — they are declarative child-plugin lists a user can apply as a set, and they carry **no** model fields of their own. The fallbacks plugin needs no preset-specific configuration: because a preset composes plugins, the fallback applies **wherever the plugin's row is mounted** — a preset that includes the `dsh-llm-router` row gives that preset's sessions the same chains and roles configured for the plugin.
 
 Two composition caveats:
 

@@ -6,6 +6,16 @@ dsh（DeepSeek Harness）的**模型路由与故障兜底**插件。它是 `dsh-
 
 一句话区别：以前你要分别维护「降级链」「分时槽」「provider 重试」「残片判定」四处配置；现在你只维护一张**模型配置**列表，其余全部由它编译出来。
 
+## 〇、安装
+
+```sh
+dsh plugin --profile desktop add github:hongxin-y/dsh-llm-router
+```
+
+想锁定代码版本就带上提交号（`#<sha>`）。pnpm ≥ 10 默认不执行 git 依赖的构建脚本，第一次 `add` 可能停在 `ERR_PNPM_GIT_DEP_PREPARE_NOT_ALLOWED`：在 profile 目录（`$DSH_HOME/profiles/desktop`）里跑一次 `pnpm approve-builds`，或把该包写进该 profile 的 `pnpm-workspace.yaml` 允许列表（pnpm 11 用 `allowBuilds`，pnpm 10 用 `onlyBuiltDependencies`），再执行一次。详细步骤、验证与卸载 → [docs/install.md](docs/install.md)。
+
+本包**没有**以这个名字发布到 npm 注册表——npm 上的 `dsh-llm-router` 属于另一个无关项目，请按上面的 GitHub 源安装。
+
 ## 一、核心概念：模型配置
 
 每一条「模型配置」= 一个可被路由到的真实模型 + 它自己的时间区间、兜底策略、失效判定规则。

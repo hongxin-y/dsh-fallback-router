@@ -59,7 +59,7 @@ session logs that contain authorization headers.
 - vulnerabilities in the **dsh host itself** or in the `@deepseek-ai/*`
   packages — those belong upstream, with the DeepSeek Harness maintainers;
 - general support questions, setup problems, and feature requests — take those
-  to [the issue tracker](https://github.com/omdsh-dev/dsh-llm-fallbacks/issues)
+  to [the issue tracker](https://github.com/hongxin-y/dsh-llm-router/issues)
   instead.
 
 ## Disclosure

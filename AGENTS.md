@@ -1,4 +1,4 @@
-# AGENTS.md — dsh-llm-fallbacks
+# AGENTS.md — dsh-llm-router
 
 Project-level rules for coding agents in this repository. This file is the
 **project layer**; the Morning Star harness lives under `.mstar/` (see
@@ -13,7 +13,7 @@ Project-level rules for coding agents in this repository. This file is the
 
 ## Repository
 
-`dsh-llm-fallbacks` is a TypeScript plugin for dsh (DeepSeek Harness): it
+`dsh-llm-router` is a TypeScript plugin for dsh (DeepSeek Harness): it
 builds automatic provider/model fallback chains so agent steps keep running
 when LLM requests fail (retry exhausted, auth, quota, rate limit). It mounts
 into dsh as a **pure mount** — see [Code constraints](#code-constraints).

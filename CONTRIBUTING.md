@@ -1,6 +1,6 @@
-# Contributing to dsh-llm-fallbacks
+# Contributing to dsh-llm-router
 
-Thanks for taking the time to contribute. `dsh-llm-fallbacks` is a TypeScript
+Thanks for taking the time to contribute. `dsh-llm-router` is a TypeScript
 plugin for dsh (DeepSeek Harness) that builds automatic provider/model fallback
 chains so agent steps keep running when LLM requests fail — see
 [README.md](README.md) for what it does and
@@ -16,7 +16,7 @@ enforces.
   [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) (Contributor Covenant v2.1).
   Unacceptable behavior can be reported to tech@btang.cn.
 - Bug reports, feature requests, and questions go to
-  [the issue tracker](https://github.com/omdsh-dev/dsh-llm-fallbacks/issues).
+  [the issue tracker](https://github.com/hongxin-y/dsh-llm-router/issues).
   This repository does not currently ship GitHub issue templates or a pull
   request template, so open a plain issue or pull request and describe the
   change directly.
@@ -39,8 +39,8 @@ enforces.
 ## Setup
 
 ```sh
-git clone https://github.com/omdsh-dev/dsh-llm-fallbacks.git
-cd dsh-llm-fallbacks
+git clone https://github.com/hongxin-y/dsh-llm-router.git
+cd dsh-llm-router
 pnpm install
 ```
 
@@ -149,5 +149,5 @@ rollback — is in [docs/release.md](docs/release.md).
 
 If something in this guide is unclear or appears to contradict the repository,
 open an issue at
-[https://github.com/omdsh-dev/dsh-llm-fallbacks/issues](https://github.com/omdsh-dev/dsh-llm-fallbacks/issues)
+[https://github.com/hongxin-y/dsh-llm-router/issues](https://github.com/hongxin-y/dsh-llm-router/issues)
 and describe what you were trying to do.

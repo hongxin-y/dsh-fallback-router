@@ -1,6 +1,6 @@
 # Verification Record (Profile Installation and Plugin-Config Card Runtime Verification)
 
-This document records the installation / runtime-contract verification already completed for `dsh-llm-fallbacks` in **this repo's verification environment (a sandbox-compatible scratch environment)**, plus the verification steps and expected results that **must be executed in the user's real dsh environment**.
+This document records the installation / runtime-contract verification already completed for `dsh-llm-router` in **this repo's verification environment (a sandbox-compatible scratch environment)**, plus the verification steps and expected results that **must be executed in the user's real dsh environment**.
 
 > **Scope statement**: this repo's verification environment is sandbox-constrained — it **cannot perform any write to a running dsh installation (a real `$DSH_HOME`)**, and it cannot operate the web settings GUI, issue real model calls, or observe across processes. Therefore "Verified" below covers only evidence completable inside the workspace (unit/integration tests, scratch-profile loading and `--dump-config` layer order, the build pipeline); "To be run by the user" lists the real-environment steps and expectations, labeled honestly without overstating the verified scope.
 
@@ -52,22 +52,22 @@ On a **scratch profile inside the workspace** (`DSH_HOME=<plugin-repo>/.dsh-veri
 
 ```
 $ dsh plugin --profile verify add <plugin-repo>
-  → profile initialized; `dsh.profile.bundles` = ["@deepseek-ai/dsh-base", "dsh-llm-fallbacks"]
+  → profile initialized; `dsh.profile.bundles` = ["@deepseek-ai/dsh-base", "dsh-llm-router"]
     (reconcile appends to the end of the list, matching the "add appends by default" semantics)
 $ dsh --profile verify --dump-config
   # == @deepseek-ai/dsh-base
   - id: llm-retry            ← llm-retry lives in the dsh-base layer
   ...
-  # == dsh-llm-fallbacks
-  - id: llm-fallbacks
-    name: dsh-llm-fallbacks
+  # == dsh-llm-router
+  - id: llm-router
+    name: dsh-llm-router
     config: {}
 ```
 
-`llm-fallbacks` sits as an **independent layer after dsh-base (which contains llm-retry)** — i.e. the waterfall
+`llm-router` sits as an **independent layer after dsh-base (which contains llm-retry)** — i.e. the waterfall
 registration order satisfies the hard requirement to "intervene after llm-retry" (corresponding to the bundle layer
 order section of [docs/install.md](docs/install.md); the real web profile's layer order `dsh-base → dsh-web-app → @mstar-harness/dsh
-→(add) dsh-llm-fallbacks` works the same way — `add` appends to the end, which suffices).
+→(add) dsh-llm-router` works the same way — `add` appends to the end, which suffices).
 
 ### 3. Runtime contracts (backed by test evidence)
 
@@ -105,11 +105,11 @@ order section of [docs/install.md](docs/install.md); the real web profile's laye
 cd <plugin-repo>
 pnpm install          # self-build via prepare (pnpm toolchain)
 dsh plugin --profile web add .
-dsh --profile web --dump-config   # the composed tree should end with a # == dsh-llm-fallbacks layer
+dsh --profile web --dump-config   # the composed tree should end with a # == dsh-llm-router layer
 ```
 
-**Expected**: `dsh-llm-fallbacks` is appended to the end of `dsh.profile.bundles` (after `@deepseek-ai/dsh-base`);
-in `--dump-config` the `llm-fallbacks` layer appears after the dsh-base layer that contains `llm-retry`.
+**Expected**: `dsh-llm-router` is appended to the end of `dsh.profile.bundles` (after `@deepseek-ai/dsh-base`);
+in `--dump-config` the `llm-router` layer appears after the dsh-base layer that contains `llm-retry`.
 Then restart the dsh web session so the host half and the client half load.
 
 ### 2. Web plugin-config card verification
@@ -186,7 +186,7 @@ Then restart the dsh web session so the host half and the client half load.
 7. **Take-effect evidence (AC-1 core)**: **without restarting the host or reloading the page** — first confirm the host PID/start
    time matches the §4.1 baseline (`ps -o pid,lstart -p <pid>`), then trigger one trigger-code failure (§4.3
    injection method, e.g. AUTH/QUOTA) → expected:
-   - `llm-fallbacks: agent ... switch` appears in the logs (info level, candidate attempt order and skip reasons);
+   - `llm-router: agent ... switch` appears in the logs (info level, candidate attempt order and skip reasons);
    - the session event stream gains **no** `fallbacks/switch` event (issue #52 stop-write — the switch is recorded in
      the info log only);
    - subsequent requests route to the chain target (provider/model becomes the first chain entry), and the current step/turn
@@ -206,7 +206,7 @@ Then restart the dsh web session so the host half and the client half load.
    (`AUTH` / `QUOTA`, reaching the plugin directly without backoff);
    on the retryable-code path (`RATE_LIMIT` / 5xx) observe llm-retry backing off first and the chain decision
    after its budget is exhausted.
-2. **Expected**: `llm-fallbacks: agent ... switch` in the logs (no durable `fallbacks/switch` session event is written — issue #52 stop-write; the switch is recorded only in the info log) + the request
+2. **Expected**: `llm-router: agent ... switch` in the logs (no durable `fallbacks/switch` session event is written — issue #52 stop-write; the switch is recorded only in the info log) + the request
    continuing on the chain target with the current step/turn uninterrupted (corresponding to the §3 runtime verification).
 3. **Under an active model-selection (documented degradation, T2 conclusion)**: with an active model-selection (the user
    picked a provider/model in the settings page / `settings.yaml`), a switch after a trigger-code failure **still happens
@@ -265,7 +265,7 @@ Then restart the dsh web session so the host half and the client half load.
    declared role id, a `roles.rules` match, or (with `roleAutoMatch` left at its default `true`) the LLM auto-match stage —
    dispatch a subagent whose resolved role's chain head differs from the request's current model.
 2. **Expected**: on the subagent's **first** request the chain-head model is injected — an info-level
-   `llm-fallbacks: agent ... role-inject role=<role> model=<provider>/<model>` log line (no durable `fallbacks/switch`
+   `llm-router: agent ... role-inject role=<role> model=<provider>/<model>` log line (no durable `fallbacks/switch`
    event is written — issue #52 stop-write; the `role-inject` reason survives only in the event vocabulary for legacy
    events). Later requests are **not**
    re-injected (idempotent once-marker). The injection writes **no** pending switch / cooldown / failure bookkeeping (it is
@@ -279,7 +279,7 @@ Then restart the dsh web session so the host half and the client half load.
 #### 4.7 Manual web model selection may re-apply over a fallback switch (AC-2 — documented degradation, re-homed)
 
 1. **Background**: removing the marker coordination that shipped with the local dsh-agent patch (plan
-   `llm-fallbacks-runtime-depatch`) left the plugin with no way to mark a fallback switch so a web-front-end model
+   `llm-router-runtime-depatch`) left the plugin with no way to mark a fallback switch so a web-front-end model
    selection would not re-apply over it. The status block carried a one-line `status.selectionNote` (zh/en) documenting
    this; since plan `fallbacks-settings-visibility` (AC-2) trims the card's read-only status block to the recent-switch
    line only, the degradation is re-homed here with equivalent semantics.

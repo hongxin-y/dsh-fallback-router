@@ -1,150 +1,104 @@
 # Installation Guide
 
-This document explains how to load `dsh-llm-fallbacks` into a dsh profile, verify the installation, and uninstall it.
+This document explains how to load `dsh-llm-router` into a dsh profile, verify the installation, and uninstall it.
 
 ## Prerequisites
 
-- A working dsh runtime environment (`$DSH_HOME`, defaults to `~/.dsh`); development-time type checking and tests need the `@deepseek-ai/*` peer dependencies (their versions are declared in `package.json`) resolved (see "Development-time `@deepseek-ai/*` peer resolution" below).
-- Building requires **node** (`>= 22`) and **pnpm** (`>= 10`) — needed **only for local directory installs** (development): the plugin's `prepare` script self-builds (`pnpm run build`, tsdown + tsc, pnpm stack without bun); registry installs deliver built artifacts, so the target machine does not build anything.
-- The target profile (e.g. `web`) is readable/writable, and a dsh session restart is required after installation.
+- A working dsh runtime (`$DSH_HOME`, defaults to `~/.dsh`) and the profile you want to install into (e.g. `desktop`, `web`).
+- A session restart after installation: the plugin's host half and client half load on the next start.
+- Building from source needs **node** (`>= 22`) and **pnpm** (`>= 10`). A GitHub install builds on the target machine (the package's `prepare` script runs `pnpm run build`); nothing needs to be installed by hand.
 
-## Development-time `@deepseek-ai/*` peer resolution
+## 1. GitHub install (the published channel)
 
-`@deepseek-ai/*` is a private package family: at runtime it is provided by the host dsh box as a bundle (`peerDependencies` contract; `@deepseek-ai/*` is externalized at tsdown build time). During development the real packages (the peer versions declared in `package.json`) resolve in one of two supported ways:
+```sh
+dsh plugin --profile desktop add github:hongxin-y/dsh-llm-router
+# pin a commit so the code that runs cannot change under you:
+dsh plugin --profile desktop add github:hongxin-y/dsh-llm-router#<sha>
+```
 
-- **npm registry (current)**: the peer versions declared in `package.json` are published on the npm registry — `autoInstallPeers: true` in `pnpm-workspace.yaml` + an auth token in the user-level `~/.npmrc` — `pnpm install` pulls in the peer dependencies automatically, so type checking, tests, and navigation all run against the real published code (no local link farm).
-- **Local link (alternative)**: when the target dsh line is not yet on npm, development links the sibling dsh source checkout's `@deepseek-ai/*` packages into `node_modules` (type checking, tests, and navigation run against that linked tree; it is tsc-built into `lib/types/` only — its exports-mapped `lib/index.js` bundles do not exist — so the vitest config aliases the packages the test graph VALUE-imports, see the "Client store seam" bullet below).
-- **Authentication (pnpm 11)**: applies to the npm-registry mode. As of pnpm 11, credentials in a project-level `.npmrc` **no longer expand environment variables** (`${NPM_TOKEN}` is invalid and warns). The token must live in the **user-level** `~/.npmrc`: `@deepseek-ai:registry=https://registry.npmjs.org/` + `//registry.npmjs.org/:_authToken=<token>` (or `pnpm config set "//registry.npmjs.org/:_authToken" <token>`); `NPM_TOKEN` remains the read-only token source for the restricted scope.
-- **Version**: the peer range lives in `package.json`'s `peerDependencies` — the single source of truth (kept in sync with the dlx host); bump it there after a dsh upgrade, and nowhere else in the repo.
-- **pnpm version**: pnpm 11.21+ (this project's stack). Since 11.21 the minimum-release-age supply-chain gate is enabled by default; `minimumReleaseAgeExclude` in `pnpm-workspace.yaml` exempts the whole private `@deepseek-ai/*` scope with a single scope pattern rather than a per-release list — that family publishes in the same prerelease wave this project's peers resolve from, so enumerating releases would mean appending entries on every dsh upgrade. This is an explicit, user-approved tradeoff: the 24h maturity window deliberately does not apply to that scope. **Do not delete the block manually**: a resolved lockfile hard-fails without the exemption (`ERR_PNPM_MINIMUM_RELEASE_AGE_VIOLATION`; re-resolve with `pnpm clean --lockfile`).
-- **Client store seam**: the client half's one runtime VALUE import is `@deepseek-ai/dsh-client-store` (the snapshot-store engine — a frozen loader-table platform module, so the client bundle stays external on it). The published package (the peer version declared in `package.json`) ships `lib/index.js` + `lib/types/*.d.ts`, so the PR worktree's vitest graph runs in **registry mode**: the store VALUE import resolves through the package's exports map and no alias is needed. The local-link alternative (a sibling dsh checkout linked into `node_modules`, tsc-built into `lib/types/` only) is still supported — in that mode `vitest.config.ts`'s probe detects the missing `lib/types/index.js` and aliases the VALUE-imported packages to the linked tree.
-- **Upstream manifest gap**: the published `@deepseek-ai/dsh-client-ui-primitives` (the peer version declared in `package.json`) bare-imports `@deepseek-ai/dsh-util-code-language` at runtime (its markdown code highlighting) without declaring it in the published manifest — the source tree declares it only as a devDependency, and the host box resolves it from its own full package set, so only npm-registry dev installs hit the gap. The `packageExtensions` block in `pnpm-workspace.yaml` patches the manifest so the vitest/dev graph resolves the import; remove the block once an upstream release declares the dependency.
+`dsh plugin` forwards its arguments to the pnpm inside the profile directory (`add`, `remove`, `why` all work) and appends `dsh-llm-router` to that profile's bundle layer list (`dsh.profile.bundles`). The plugin is **mount-only**: installation = bundle row insert + client inject (`dsh.client.inject`), with **zero modification of the dsh source tree and no patch steps**, so dsh upgrades never require re-patching.
 
-## 1. Desktop / Web plugin page
+### pnpm ≥ 10 build approval
 
-The dsh Desktop app and a `dsh web` session expose the same plugin manager, and it is the shortest path — no shell, no profile flags:
+pnpm ≥ 10 does not run a git dependency's build script (`prepare`) by default, so the first `add` stops with:
+
+```
+ERR_PNPM_GIT_DEP_PREPARE_NOT_ALLOWED  Ignored build scripts: dsh-llm-router.
+```
+
+Approve it and re-run. The allow list lives in the profile's `pnpm-workspace.yaml`, so run pnpm's own approval command inside the profile directory:
+
+```sh
+cd "$DSH_HOME/profiles/desktop"      # or %USERPROFILE%\.dsh\profiles\desktop
+pnpm approve-builds                  # interactive
+dsh plugin --profile desktop add github:hongxin-y/dsh-llm-router
+```
+
+Or write the entry by hand (the key name depends on the pnpm version — `allowBuilds` on pnpm 11, `onlyBuiltDependencies` on pnpm 10):
+
+```yaml
+allowBuilds:
+  dsh-llm-router@<resolved spec>: true
+```
+
+Approval means that package's code may execute on your machine at install time — which is why pinning a commit is recommended.
+
+### Bundle layer order
+
+A dsh profile is an ordered list of bundle layers: `@deepseek-ai/dsh-base` (which contains the llm-retry plugin) → the app layers → `dsh-llm-router` (appended by `add`).
+
+**`dsh-llm-router` must sit after llm-retry.** Its `agent/request-error` listener has to compose after llm-retry, so it only steps in once the retry budget is spent; a reversed order would let retryable failures reach this plugin first and preempt llm-retry's backoff. `add` appends to the end of the list, which already satisfies this — no manual edit needed. If you do edit `$DSH_HOME/profiles/<profile>/package.json` by hand, keep `@deepseek-ai/dsh-base` before this plugin.
+
+## 2. Local directory install (development)
+
+```sh
+pnpm install                 # or explicit: pnpm build  (prepare self-builds dist/)
+dsh plugin --profile desktop add .
+```
+
+Same mount-only semantics as above. Use this while iterating on the plugin itself: re-run `add .` (or rebuild and restart) after changing the source.
+
+## 3. Desktop / Web plugin page
+
+The dsh Desktop app and a `dsh web` session expose the same plugin manager:
 
 1. Open the **Plugins** page in the sidebar.
 2. Click **Add plugin**.
-3. Enter `dsh-llm-fallbacks` as the package name and click **Install**.
+3. Paste the GitHub repo `hongxin-y/dsh-llm-router` (or a local directory) and install.
 
-The **Add plugin** wizard accepts a package name (the npm package name), a GitHub repo, or a local directory; a registry install needs only the package name. When the install finishes, **follow the host's own restart prompt** — the plugin's host half and client half load on the next start.
+The GUI installs into its own profile — the same profile `dsh plugin --profile … add …` targets — so the GUI path and the CLI path are the same installation. The terminal profile `dsh-tui` has no plugin page; use the CLI.
 
-The GUI installs into the **`web` profile** — exactly the profile `dsh plugin --profile web add …` targets (§3) — so the GUI path and the registry CLI install are the same installation. The terminal profile `dsh-tui` has no plugin page: it keeps the CLI path (§6). A registry install ships the built `dist/`, so neither the GUI path (registry package) nor the registry CLI path builds anything on the target machine. Local-directory and GitHub-repo installs build first (§2, §5).
-
-## 2. Local directory install (recommended)
+## 4. Verify the installation
 
 ```sh
-# 1) Build in the plugin repo directory (prepare self-build, produces dist/)
-pnpm install        # or explicit: pnpm build
-# 2) Load into the target profile
-dsh plugin --profile web add .
+dsh --profile desktop --dump-config
 ```
 
-`dsh plugin` forwards its arguments to the pnpm in the profile directory (`add`, `remove`, `why`, etc. all work) and appends `dsh-llm-fallbacks` to the profile's bundle layer list (`dsh.profile.bundles`). The plugin is **mount-only**: installation = bundle row insert + client inject (`dsh.client.inject`), **zero modification of the dsh source tree, no patch steps**; dsh upgrades never require re-patching.
-
-### Bundle layer order (hard requirement)
-
-A dsh profile is composed of ordered bundle layers: `@deepseek-ai/dsh-base` (contains the llm-retry plugin) → `@deepseek-ai/dsh-web-app` → `@mstar-harness/dsh` → `dsh-llm-fallbacks` (appended by `add`).
-
-**`dsh-llm-fallbacks` must be ordered after llm-retry (inside the `@deepseek-ai/dsh-base` layer)**: the plugin's `agent/request-error` listener must compose after llm-retry so it only steps in after the retry budget is exhausted (normal mode) or after llm-retry has delegated downstream first (always mode); a reversed order would let retryable failures reach this plugin first and preempt llm-retry's backoff.
-
-`add` appends to the end of the list by default, which satisfies this order — no manual change needed; if you edit the `dsh.profile.bundles` of `$DSH_HOME/profiles/web/package.json` by hand, keep `@deepseek-ai/dsh-base` before this plugin.
-
-## 3. Registry install
-
-```sh
-dsh plugin --profile web add dsh-llm-fallbacks   # pin an exact version: add @<version>
-```
-
-Registry install notes:
-
-- **Built artifacts, no self-build**: the registry package ships built artifacts (`dist/`) — the target machine needs **no node / pnpm** and there is no `prepare` self-build.
-- **No pnpm ≥ 10 build approval**: the build interception (`ERR_PNPM_GIT_DEP_PREPARE_NOT_ALLOWED`) applies to git dependencies only; registry packages run no build scripts, so `onlyBuiltDependencies` / `approve-builds` are not needed.
-- **Version**: follows the npm dist-tag (default `latest`); pinning an exact version `dsh-llm-fallbacks@<version>` prevents a later publish from silently changing the code that actually runs.
-- **Mount-only, no patch steps**: a registry install is complete as-is — the plugin makes zero modifications to the dsh source tree (bundle row insert + client inject + its own gateway), no apply/revert scripts, and nothing to re-patch after a dsh upgrade.
-
-> **Release channels**: stable releases publish under the `latest` dist-tag (the default for `npm i dsh-llm-fallbacks`); prereleases publish under their channel dist-tag — install a prerelease line via its channel, e.g. `npm i dsh-llm-fallbacks@alpha`. npm authentication is tokenless Trusted Publishing. Release process → [docs/release.md](docs/release.md).
-
-## 4. npm / pnpm package install
-
-```sh
-npm install dsh-llm-fallbacks   # or: pnpm add dsh-llm-fallbacks
-```
-
-> The package ships built artifacts (`dist/`); the consumer surface (library function imports, named service) is documented in [docs/consumer-api.md](docs/consumer-api.md).
-
-## 5. Git install (currently available)
-
-```sh
-dsh plugin --profile web add github:omdsh-dev/dsh-llm-fallbacks   # pin a commit: add #<sha>
-# Equivalent full-URL form (or add #<branch|tag|commit> to pin a ref):
-# dsh plugin --profile web add https://github.com/omdsh-dev/dsh-llm-fallbacks.git
-```
-
-Git install notes:
-
-- **prepare self-build**: when installing a git dependency, pnpm runs the package's `prepare` script (`pnpm run build`) to self-build, so the installing machine needs node and pnpm; a failed build installs an unbuilt package.
-- **pnpm ≥ 10 build approval (every first `add` hits it)**: pnpm ≥ 10 does not run a git dependency's build scripts (including `prepare`/`postinstall`) by default. The first `add` fails and prints `ERR_PNPM_GIT_DEP_PREPARE_NOT_ALLOWED` together with the exact package key (`dsh-llm-fallbacks`). Add that key to this profile's `pnpm-workspace.yaml`:
-
-  ```yaml
-  # $DSH_HOME/profiles/web/pnpm-workspace.yaml
-  onlyBuiltDependencies:
-    - dsh-llm-fallbacks
-  ```
-
-  Then re-run `add`; alternatively allow it interactively with `dsh plugin --profile web approve-builds`. The approval means that package's code is allowed to execute on your machine at install time — pinning a commit (`github:omdsh-dev/dsh-llm-fallbacks#<sha>`) is recommended to prevent a later push from silently changing the code that actually runs. Exact behavior follows the policy of the pnpm version you use.
-- **Mount-only, no patch steps**: a git install executes `prepare` (build) and is done — the plugin makes zero modifications to the dsh source tree (bundle row insert + client inject + its own gateway), no apply/revert scripts, and nothing to re-patch after a dsh upgrade.
-
-## 6. dsh-tui profile (terminal TUI)
-
-A terminal (`dsh-tui`) profile loads the plugin with the same `add` mechanics — pass `--profile dsh-tui` instead of `--profile web`:
-
-```sh
-dsh plugin --profile dsh-tui add dsh-llm-fallbacks   # registry; pin an exact version: add @<version>
-# or a source install (local directory, build first — see §2; git, see §5):
-dsh plugin --profile dsh-tui add .
-dsh plugin --profile dsh-tui add github:omdsh-dev/dsh-llm-fallbacks
-```
-
-If no dsh-tui profile exists yet, create it first: `dsh plugin --profile dsh-tui add @deepseek-harness-tui/dsh-tui` (the launcher also self-bootstraps the profile on first run if absent).
-
-`add` reads the package's `dsh.bundle.patch` (`bundle/cordis.patch.yml`) and appends it as a composition layer over the dsh-tui profile's bundle stack — the `- insert: id: llm-fallbacks` row lands in the profile, with the same mount-only guarantees as every other profile (zero dsh source-tree modification, no patch steps, nothing to re-patch after a dsh upgrade).
-
-**Restart the dsh-tui session after installing.** In the terminal:
-
-- The `/` menu lists `/fallbacks` (session diagnostics) and `/fallbacks config` (composed-config readback) with subcommand completion, including the `config` → `revert-seed <role-id>` leaf — this needs the profile's `tuiCommandTrees` service (the `dsh-tui-command-trees` bundle row; the shipped dsh-tui bundle has it).
-- **Editing**: the TUI's write surface is the **`/settings`** screen — with **dsh-tui ≥ v0.8.5** (commit `c51661f` or later; the settings seam shipped in v0.8.0, the groups shape in v0.8.5) `/settings` shows a **fallbacks** section with full parity to the web Settings → 插件配置 → Fallbacks card (see [docs/configuration.md](docs/configuration.md) § TUI readback). On an older dsh-tui the section is absent and file editing remains the only TUI surface. File editing still works everywhere: the shared `$DSH_HOME/settings.yaml` (`fallbacks:` section, the same file the web card writes) for global settings, or the profile patch `~/.dsh/profiles/dsh-tui/cordis.patch.yml` (an `- id: llm-fallbacks` row with `config:` overrides) for dsh-tui-specific values. Note: a patch row **replaces** the targeted row's whole `config` — restate every field you want to keep (schema defaults fill the rest).
-- Read the composed result back with `/fallbacks config` (config namespace + TUI readback → [docs/configuration.md](docs/configuration.md)); verify the layer with `dsh --profile dsh-tui --dump-config` (the `llm-fallbacks` row appears over the profile bundle stack).
-
-## 7. Verify the installation
-
-```sh
-dsh --profile web --dump-config
-```
-
-The plugin's own layer should appear at the end of the merged configuration tree:
+The plugin's layer should appear in the merged configuration tree:
 
 ```yaml
-# == dsh-llm-fallbacks
-- id: llm-fallbacks
-  name: dsh-llm-fallbacks
+# == dsh-llm-router
+- id: llm-router
+  name: dsh-llm-router
   config: {}
 ```
 
-And the layer **before** it includes llm-retry (from `@deepseek-ai/dsh-base`) — the layer order is the waterfall registration order (see the bundle layer order above).
+The layer **before** it includes llm-retry (from `@deepseek-ai/dsh-base`) — layer order is waterfall registration order (see above).
 
-Then **restart the dsh web session** (`dsh web`, or restart the running session) so that both the host half and the client half (the plugin config card) load:
+Then restart the session and check the two halves:
 
-- The web settings GUI's Settings → **插件配置** page should show the **Fallbacks card**, **always available** — the card skeleton also renders on first open (before any `fallbacks` config exists).
-- The card is readable, editable, and saveable; it renders as the flat always-open form (no feature switch — the config-level `enabled` key was removed) with one Save/Discard footer; with nothing configured the behavior is a no-op (see [docs/configuration.md](docs/configuration.md)).
-- In-session, type `/fallbacks` directly to inspect the current session's diagnostics (role → chain → recent switches → cooldown); see the README's `/fallbacks` section.
+- The web settings GUI's Settings → **插件配置** page shows the model-routing card, always available — the skeleton renders even before any `fallbacks` config exists. It is readable, editable and saveable; with nothing configured the behavior is a no-op (see [docs/configuration.md](configuration.md)).
+- In a session, type `/fallbacks` to inspect that session's diagnostics (role → chain → recent switches → cooldown).
 
-## 8. Uninstall
+## 5. Uninstall
 
 ```sh
-dsh plugin --profile web remove dsh-llm-fallbacks
-dsh --profile web --dump-config   # confirm the llm-fallbacks layer is gone
+dsh plugin --profile desktop remove dsh-llm-router
+dsh --profile desktop --dump-config     # confirm the llm-router layer is gone
 ```
 
-Restart the dsh web session for the uninstall to take effect. After uninstalling, the plugin no longer participates in any request/error path. Note: the plugin writes no durable `fallbacks/switch` session events (issue #52 — the apply()-time registration was proven ineffective), so new sessions are never affected. Sessions written by older plugin versions that contain such events **cannot** be repaired by an `ignorable` flag — the released session-format migration chain refuses unknown event types even when marked ignorable — so the plugin repo's `pnpm repair:session-logs` tool reports them and writes nothing by default — only the explicit lossy `--drop-legacy-events` opt-in removes such rows (see [Repair existing sessions](repair.md#repair-existing-sessions)).
+Restart the session afterwards. Once uninstalled the plugin no longer participates in any request or error path.
+
+## About the npm package name
+
+This plugin is **not** published to the npm registry under `dsh-llm-router`: that name is taken by an unrelated project. Install from the GitHub source above (or from a local clone), not with `npm install dsh-llm-router`.

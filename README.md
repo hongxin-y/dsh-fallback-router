@@ -6,6 +6,16 @@ Model routing and failure fallback for dsh (DeepSeek Harness). It merges `dsh-ll
 
 The difference in one line: you used to maintain four things separately (fallback chain, time slots, provider retry, residue detection); now you maintain one list of **model profiles** and everything else is compiled from it.
 
+## 0. Install
+
+```sh
+dsh plugin --profile desktop add github:hongxin-y/dsh-llm-router
+```
+
+Pin a commit (`#<sha>`) if you want the code that runs to stop changing. pnpm ≥ 10 does not run a git dependency's build script by default, so the first `add` may stop with `ERR_PNPM_GIT_DEP_PREPARE_NOT_ALLOWED`; run `pnpm approve-builds` inside the profile directory (`$DSH_HOME/profiles/desktop`), or add the package to that profile's `pnpm-workspace.yaml` allow list (`allowBuilds`, or `onlyBuiltDependencies` on older pnpm), then run the `add` again. Details, verification and uninstall → [docs/install.md](docs/install.md).
+
+The package is not on the npm registry under this name — `dsh-llm-router` there belongs to an unrelated project. Install from the GitHub source above.
+
 ## 1. The core idea: model profiles
 
 One profile = one real route + its own time windows, fallback policy, and failure rules.
