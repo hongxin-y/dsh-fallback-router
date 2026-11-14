@@ -33,7 +33,7 @@ const allDaySlotRow: SlotRowConfig = {
   kind: 'custom',
   start: '00:00',
   end: '23:59',
-  chain: ['anthropic/claude-sonnet-4'],
+  chain: ['anthropic/claude-sonnet-4', 'openai/gpt-4o'],
 }
 
 /** A slot row matching UTC+8 09:00–12:00 only. */
@@ -41,7 +41,7 @@ const morningSlotRow: SlotRowConfig = {
   kind: 'custom',
   start: '09:00',
   end: '12:00',
-  chain: ['anthropic/claude-sonnet-4'],
+  chain: ['anthropic/claude-sonnet-4', 'openai/gpt-4o'],
 }
 
 let ctx: Context
@@ -81,8 +81,10 @@ describe('root-origin failure walk seeds from the slot-effective chain (P7)', ()
     vi.setSystemTime(new Date('2026-08-18T04:00:00Z'))
 
     expect(await dispatchRequestError(ctx, agent)).toEqual({ kind: 'retry' })
+    // The session is served by the slot head (anthropic), so the walk moves
+    // PAST it to the slot row's next entry — never to the all-day OFFICIAL_FLASH.
     expect(await dispatchRequest(ctx, agent, { provider: 'mock', model: 'gpt-4o' }))
-      .toEqual({ provider: 'anthropic', model: 'claude-sonnet-4' })
+      .toEqual({ provider: 'openai', model: 'gpt-4o' })
     // The failure walk is 降级切换 — never 分时.
     const failLogs = logs.filter(
       (message) => message.type === 'info' && String(message.args[0]).includes('fallback switch'),
@@ -117,14 +119,18 @@ describe('root-origin failure walk seeds from the slot-effective chain (P7)', ()
     const { agent } = makeAgent('ts-wild', { provider: 'mock', model: 'gpt-4o' }, { origin: 'root' })
     apply(ctx, cfg({
       rootChain: [OFFICIAL_FLASH],
-      timeSlots: [{ kind: 'custom', start: '00:00', end: '23:59', chain: ['other/*', 'openai/gpt-4o'] }],
+      timeSlots: [{ kind: 'custom', start: '00:00', end: '23:59', chain: ['other/*', 'openai/gpt-4o', 'openai/gpt-4o-mini'] }],
     }))
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2026-08-18T04:00:00Z'))
 
+    // The session is served by the slot row's first EXACT entry (the phantom
+    // wildcard cannot be dispatched), so the walk moves to the next exact one:
+    // had the probe diverged from the resolution it would have targeted
+    // `other/Auto` here instead.
     expect(await dispatchRequestError(ctx, agent)).toEqual({ kind: 'retry' })
     expect(await dispatchRequest(ctx, agent, { provider: 'mock', model: 'gpt-4o' }))
-      .toEqual({ provider: 'openai', model: 'gpt-4o' })
+      .toEqual({ provider: 'openai', model: 'gpt-4o-mini' })
   })
 
   it('keeps slot rows inert for a legacy non-conforming all-day (P6 — v0.2.2 walk verbatim)', async () => {
@@ -133,9 +139,12 @@ describe('root-origin failure walk seeds from the slot-effective chain (P7)', ()
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2026-08-18T04:00:00Z'))
 
+    // The walk stays on the RAW rootChain: it moves from the served head
+    // (legacy-a) to the next raw entry and never into the slot row's
+    // anthropic/openai chain.
     expect(await dispatchRequestError(ctx, agent)).toEqual({ kind: 'retry' })
     expect(await dispatchRequest(ctx, agent, { provider: 'mock', model: 'gpt-4o' }))
-      .toEqual({ provider: 'mock', model: 'legacy-a' })
+      .toEqual({ provider: 'other', model: 'legacy-b' })
   })
 })
 
@@ -202,7 +211,7 @@ describe('分时切换 detection — per-root-agent last-winner marker (P7)', ()
     // rotation did not consume the step valve or poison the cooldown.
     expect(await dispatchRequestError(ctx, agent)).toEqual({ kind: 'retry' })
     expect(await dispatchRequest(ctx, agent, { provider: 'mock', model: 'gpt-4o' }))
-      .toEqual({ provider: 'anthropic', model: 'claude-sonnet-4' })
+      .toEqual({ provider: 'openai', model: 'gpt-4o' })
   })
 
   it('never logs for subagent-origin requests', async () => {
@@ -252,7 +261,7 @@ describe('分时切换 detection — per-root-agent last-winner marker (P7)', ()
     // The failure walk stays on the raw rootChain (v0.2.2 verbatim).
     expect(await dispatchRequestError(ctx, agent)).toEqual({ kind: 'retry' })
     expect(await dispatchRequest(ctx, agent, { provider: 'mock', model: 'gpt-4o' }))
-      .toEqual({ provider: 'mock', model: 'legacy-a' })
+      .toEqual({ provider: 'other', model: 'legacy-b' })
   })
 
   it('keeps the marker per agent (a fresh agent baselines on its first request)', async () => {

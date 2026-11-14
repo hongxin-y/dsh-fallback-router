@@ -137,6 +137,7 @@ import {
   installFallbacksAdapter,
   pinForcedRoute,
   pinOnceForcedRoute,
+  servedHeadFor,
 } from './virtual-adapter.ts'
 
 /** The plugin row id mounted by the profile bundle patch. */
@@ -662,9 +663,15 @@ function currentModel(agent: Agent, provider: string, config: FallbacksConfig, n
     // gated `effectiveHeadOf` — a legacy config keeps the raw rootChain). Left
     // unresolved, the walk would treat the virtual pair as the failing route
     // and hand the very model that just failed straight back.
-    const head = firstDispatchableExactHead(
-      resolveEffectiveChain(config, now, config.tz ?? 'Asia/Shanghai'),
-    )
+    // A NAMED route walks its own chain (`FallbacksChain-<id>/Chain`): the
+    // delegate serves that chain's head (time-slot aware), never the root
+    // chain, so anchoring on the root would make the walk re-pick the head
+    // that just failed.
+    const head = namedFallbackId(provider) === undefined
+      ? firstDispatchableExactHead(
+        resolveEffectiveChain(config, now, config.tz ?? 'Asia/Shanghai'),
+      )
+      : servedHeadFor(config, provider, now)
     if (head !== undefined) return { provider: head.provider, model: head.model }
   }
   const route = { provider, model: header?.config.model ?? agent.options.model ?? '' }

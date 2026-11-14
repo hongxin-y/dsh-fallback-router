@@ -883,7 +883,7 @@ describe('apply() wiring — conditional commands child', () => {
     expect(text).toContain('会话来源: root')
     // No rules match → the built-in 'inherit' role → rootChain + inherit tail.
     expect(text).toContain('角色: inherit')
-    expect(text).toContain('链: other/gpt-4o（inherit-root）')
+    expect(text).toContain('链: mock/gpt-4o → other/gpt-4o（inherit-root）')
     // P7: the 分时 line reports the current slot winner (all-day here — no
     // extra rows), separate from the 降级切换 switches section.
     expect(text).toContain('分时: all-day')
@@ -1022,7 +1022,7 @@ describe('apply() wiring — conditional commands child', () => {
     const text = result.kind === 'success' ? (result.text ?? '') : ''
     expect(text.split('\n')[0]).toBe('Fallbacks 配置: 已启用')
     expect(text).toContain('触发码: AUTH')
-    expect(text).toContain('根链: other/gpt-4o')
+    expect(text).toContain('根链: mock/gpt-4o, other/gpt-4o')
     expect(text).toContain('角色: 1 — coder（chain: 1）')
     expect(text).toContain('冷却: 300000 ms')
     expect(text).toContain('回主策略: cooldown-expiry')

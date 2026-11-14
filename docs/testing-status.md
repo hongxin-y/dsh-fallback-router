@@ -1,8 +1,13 @@
 # Testing status
 
-`pnpm test` is **not green yet**: 59 of 1425 assertions still encode the
-pre-0.1.0 contract. This page records exactly what is stale and why, so the gap
-is auditable instead of hidden behind a skipped suite.
+`pnpm test` is **green**: 61 files, 1413 assertions passed, 12 skipped (1425
+total). CI runs it without `continue-on-error`, so a regression blocks the
+workflow again.
+
+```
+Test Files  61 passed (61)
+     Tests  1413 passed | 12 skipped (1425)
+```
 
 ## What changed in 0.1.0
 
@@ -33,38 +38,43 @@ can no longer be switched at all — the host froze its selection. `decide()`
 logs `concrete route … cannot be switched at dispatch` and returns `null`; the
 provider-level retry policy still applies.
 
-## Known-failing specs
+## The 12 skips
 
-| Suite | Failing | Cause |
-| --- | --- | --- |
-| `tests/repair-session-logs.spec.ts` | 10 | Windows path separators (`\tmp\…` vs `/tmp/…`). Passes on Linux CI; unrelated to routing. |
-| `tests/index-request.spec.ts` | 7 | Named-chain identity asserted on the rewritten request; now asserted through the pin. |
-| `tests/dispatch-integration.spec.ts` | 3 | Role-inject is a one-shot pin now, so the post-inject failure models a route the session already left. |
-| `tests/command.spec.ts` | 2 | `/fallbacks` state read still expects the pre-pin switch bookkeeping. |
-| `tests/always-mode.spec.ts` | 2 | `requests` now reports the served route (virtual until the cap pins a hop). |
-| `tests/plugin.spec.ts` | 1 | Model-selection notice retirement interacts with the one-shot pin. |
-| `tests/plugin-meta.spec.ts` | 1 | Icon size assertion (`< 256 KiB`) — `icon.svg` is fine, the fixture path moved. |
+- 10 × `tests/repair-session-logs.spec.ts` — POSIX-only cases (`symlink` needs
+  a privilege Windows does not grant, `chmod 000` is a no-op for the owner).
+  They still run on Linux CI.
+- 2 × `tests/session-log-publish.spec.ts` — the catalog-gated integration case
+  needs a released session-format catalog (`--catalog`,
+  `DSH_SESSION_FORMAT_CATALOG`, a `dsh` on `PATH`, or an `npx` cache). The unit
+  tests above it always run.
 
-Everything else (1358 assertions, 49 files) passes, including the full
-`virtual-adapter`, `plugin`, `runtime-recovery`, `allowlist-switch`,
-`context-window`, and `dispatch-injection` suites, plus the model-level
-self-test (`scripts/selftest-models.ts`, 47 checks).
+## How the stale specs were migrated
 
-## How CI handles it
+Every failure encoded the old "the request config is rewritten" contract. The
+fixes were fixture/assertion changes only — no production behaviour was
+weakened to make a spec pass:
 
-`.github/workflows/ci.yml` runs `pnpm test` with `continue-on-error: true`
-until the table above is empty, so the workflow still reports the exact failure
-list without blocking merges. Remove that flag in the commit that turns the
-suite green — not before.
+- **Anchor on the served route.** A router-served session with no pin is served
+  by the effective chain head, so a spec that models "`mock/gpt-4o` fails, walk
+  to the next entry" must put `mock/gpt-4o` first in the chain, or declare the
+  current hop with the harness `serving` option (a sticky pin).
+- **One-shot pins expire.** Role injection pins exactly one request; the next
+  request boundary returns the session to the chain head
+  (`beginRequest` drops the `once` pin). Specs that assert a post-injection
+  failure now model the route the loop actually re-dispatches.
+- **Assert through the pin.** The switch is observable via
+  `forcedRouteOf(agent.session.id)`, not through the request config — the
+  request stays on the virtual pair.
+- **`reasoningEffort` is inherited.** A pinned hop replaces `provider`/`model`
+  only, so assertions use `toMatchObject({ provider, model })` instead of
+  `toEqual`.
+- **Manual concrete picks end the virtual session.** `selectConcrete()` in the
+  harness models a picker change (clear the pin, log the concrete pair); after
+  it a failure passes through instead of switching.
 
-## Migration recipe for a stale spec
+## Windows-only noise, now removed
 
-- A test that models "`mock/gpt-4o` fails, switch to the next model" must put
-  `mock/gpt-4o` **first in the chain**: a router-served session is always
-  served by the chain head.
-- Assert the switch through `forcedRouteOf(agent.session.id)` (the pin), not
-  through the request config — the request stays on the virtual pair.
-- Call `dispatchRequest(ctx, agent, virtualSeed(), { turn, step })` after the
-  failure: the pin only lands inside `agent/request`.
-- Report failures with the virtual provider (`FALLBACKS_PROVIDER`), never the
-  concrete route the adapter happened to dispatch to.
+- `tests/repair-session-logs.spec.ts` spawned `node_modules/.bin/tsx` (a `.cmd`
+  shim on Windows); it now spawns `node node_modules/tsx/dist/cli.mjs`.
+- Path assertions go through a `fx()`/`toPosix()` helper instead of hardcoding
+  `/`.

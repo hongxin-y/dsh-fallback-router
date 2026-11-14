@@ -169,24 +169,31 @@ describe('failure-time fallback path after dispatch injection (regression + I-00
     expect(switchEvents(agent)).toHaveLength(0)
 
     // The pending switch still applies at the next request (failure path intact).
+    // The walk starts at the failing route and moves to the NEXT chain entry:
+    // the role chain contributes `anthropic/claude-sonnet-4`, then rootChain
+    // contributes `mock/gpt-4o` (which is therefore the first non-failing hop).
     const retried = await dispatchRequest(ctx, agent, { provider: 'anthropic', model: 'claude-sonnet-4' })
-    expect(retried).toEqual({ provider: 'other', model: 'gpt-4o' })
+    expect(retried).toEqual({ provider: 'mock', model: 'gpt-4o' })
   })
 
   it('always-cap still trips with its exact pre-feature shape after a role-inject', async () => {
     const { agent } = makeAgent('t6-cap', { provider: 'mock', model: 'gpt-4o' }, { origin: 'subagent', agentPreset: 'coder' })
     apply(ctx, cfg({ rootChain: ['mock/gpt-4o', 'other/gpt-4o'], roles: coderRoles(), alwaysModeRetryCap: 3 }))
 
-    // First request: role-inject to anthropic/claude-sonnet-4.
+    // First request: role-inject to anthropic/claude-sonnet-4. The injection is
+    // a ONE-SHOT pin (`pinOnceForcedRoute`): the next request boundary expires
+    // it and the session serves the effective chain head again — which is why
+    // the retries below accumulate on `mock`, the route the loop re-dispatches.
     await dispatchRequest(ctx, agent, { provider: 'mock', model: 'gpt-4o' })
 
-    // Always-mode retries accumulate on the injected route → the cap trips at
-    // the next request boundary and routes to the rootChain target.
+    // Always-mode retries accumulate on the served route → the cap trips at the
+    // next request boundary and the walk moves to the first non-failing entry,
+    // the role chain's head.
     for (let retry = 1; retry <= 3; retry += 1) {
-      appendLlmRetry(agent, { turn: 1, step: 1, provider: 'anthropic', mode: 'always', policyKey: 'always', retry })
+      appendLlmRetry(agent, { turn: 1, step: 1, provider: 'mock', mode: 'always', policyKey: 'always', retry })
     }
-    const switched = await dispatchRequest(ctx, agent, { provider: 'anthropic', model: 'claude-sonnet-4' })
-    expect(switched).toEqual({ provider: 'other', model: 'gpt-4o' })
+    const switched = await dispatchRequest(ctx, agent, { provider: 'mock', model: 'gpt-4o' })
+    expect(switched).toEqual({ provider: 'anthropic', model: 'claude-sonnet-4' })
     // Stop-write: the always-cap switch applies with no durable event.
     expect(switchEvents(agent)).toHaveLength(0)
   })
@@ -228,14 +235,18 @@ describe('failure-time fallback path after dispatch injection (regression + I-00
   it('keeps the bare rootChain for a root-origin agent (unchanged)', async () => {
     const { agent } = makeAgent('t6-root-chain', { provider: 'mock', model: 'gpt-4o' }, { origin: 'root' })
     apply(ctx, cfg({
-      rootChain: ['root/zero'],
+      // Two entries so the walk has somewhere to go: the failure is anchored on
+      // the effective head (`root/zero`) and the next entry is the target. A
+      // one-entry rootChain cannot switch at all (same-as-current filtering).
+      rootChain: ['root/zero', 'root/one'],
       roles: { list: [{ id: 'coder', persona: '', chain: ['first/one', 'second/two'], fallback: 'none' }], rules: [] },
     }))
 
     const action = await dispatchRequestError(ctx, agent, { provider: 'mock' })
     expect(action).toEqual({ kind: 'retry' })
-    const switched = await dispatchRequest(ctx, agent, { provider: 'mock', model: 'gpt-4o' })
-    expect(switched).toEqual({ provider: 'root', model: 'zero' })
+    // The role chain must not leak into a root-origin walk.
+    const switched = await dispatchRequest(ctx, agent, { provider: 'root', model: 'zero' })
+    expect(switched).toEqual({ provider: 'root', model: 'one' })
   })
 
   it('falls back to rules-only resolution once the settings edit removes the remembered role (BUG-01 guard)', async () => {

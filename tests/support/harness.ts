@@ -2,12 +2,12 @@
  * Shared integration-test harness (plan Task 4). The drivers here are
  * extracted from Task 3's `tests/runtime.spec.ts` (real cordis waterfall
  * dispatch + fake agent/session) and extended with a mini agent-loop driver
- * that replays the loop's `buildRequest → stream → request-error → retry?`
+ * that replays the loop's `buildRequest 閳?stream 閳?request-error 閳?retry?`
  * semantics (mirrored from `packages/core/agent-loop/src/agent.ts`: build the
  * request through the `agent/request` waterfall, report the failure through
  * `agent/request-error` with the serving provider, re-enter `buildRequest` on
  * `{ kind: 'retry' }`, otherwise throw `new LlmError(failure.message,
- * failure.code, failure)` — spec §6).
+ * failure.code, failure)` 閳?spec 鎼?).
  *
  * The Task 4 spec files (`tests/plugin.spec.ts`, `tests/coexist-llm-retry
  * .spec.ts`, `tests/always-mode.spec.ts`) drive the real plugin `apply()`
@@ -25,17 +25,20 @@ import type {
 } from '@deepseek-ai/dsh-llm'
 import type { SessionEvent } from '@deepseek-ai/dsh-session'
 import { defaultFallbacksConfig, type FallbacksConfig } from '../../src/config.ts'
-import { FALLBACKS_CHAIN_MODEL, FALLBACKS_PROVIDER, forcedRouteOf } from '../../src/virtual-adapter.ts'
+import { FALLBACKS_CHAIN_MODEL, FALLBACKS_PROVIDER, clearForcedRoute, forcedRouteOf, pinForcedRoute } from '../../src/virtual-adapter.ts'
+import { namedFallbackId } from '../../src/config.ts'
 
 /** A pair served through the router delegate (concrete selection, virtual route). */
 function isVirtualRoute(provider: string, model: string): boolean {
-  return provider === FALLBACKS_PROVIDER || model === FALLBACKS_CHAIN_MODEL
+  return provider === FALLBACKS_PROVIDER
+    || model === FALLBACKS_CHAIN_MODEL
+    || namedFallbackId(provider) !== undefined
 }
 
 /**
  * Config helper: spec defaults + overrides (the plugin re-resolves through
  * the schema). There is NO `enabled` baseline any more (plan
- * fallbacks-web-ux-alignment T2 — the config-level switch is removed; the
+ * fallbacks-web-ux-alignment T2 閳?the config-level switch is removed; the
  * runtime gates read content presence via `isFallbackActive`), so every
  * cfg() call is active exactly when its overrides configure content.
  */
@@ -58,10 +61,10 @@ export interface AgentHarness {
 /**
  * Make a fake agent. `header` mirrors the native `SessionHeader` fields the
  * dispatch-time runtime reads (plan fallbacks-role-automatch Task 4):
- * `session.header.origin` (the origin gate — `'subagent'` only) and
- * `session.header.agentPreset` (the explicit-role carrier). Additive — the
+ * `session.header.origin` (the origin gate 閳?`'subagent'` only) and
+ * `session.header.agentPreset` (the explicit-role carrier). Additive 閳?the
  * default `{}` behaves exactly like the previous `undefined` header for every
- * existing reader (`?.header?.origin ?? 'root'` → `'root'`).
+ * existing reader (`?.header?.origin ?? 'root'` 閳?`'root'`).
  */
 export function makeAgent(
   id: string,
@@ -72,10 +75,20 @@ export function makeAgent(
      * The session's SERVED route reported through `requestHeader().config`
      * (the real host folds the served pair into the header after every
      * request). Pass a virtual pair (`FallbacksChain-model-1/Chain`) to model
-     * a session whose dispatch goes through the delegate — the only kind a
+     * a session whose dispatch goes through the delegate 閳?the only kind a
      * failure switch can redirect.
      */
     served?: { provider: string; model: string }
+    /**
+     * The concrete route the router is CURRENTLY serving this session, modelled
+     * as a sticky pin (what a previous failure switch leaves behind).
+     *
+     * A fresh router-served session has no pin, so the plugin reads its current
+     * route as the effective chain head. Tests that need "the chain head already
+     * failed and this is where we are now" pass this instead of relying on the
+     * head.
+     */
+    serving?: { provider: string; model: string }
   } = {},
   header: { origin?: 'root' | 'subagent'; agentPreset?: string } = {},
 ): AgentHarness {
@@ -88,6 +101,13 @@ export function makeAgent(
     ? {}
     : { provider: FALLBACKS_PROVIDER, model: FALLBACKS_CHAIN_MODEL }
   const route: { provider?: string; model?: string } = { ...(options.served ?? defaultServed) }
+  if (options.serving !== undefined) {
+    pinForcedRoute(id, {
+      provider: options.serving.provider,
+      model: options.serving.model,
+      effort: '',
+    })
+  }
   const events: Array<{ type: string; data: Record<string, unknown> }> = []
   const agent = {
     id,
@@ -97,7 +117,7 @@ export function makeAgent(
       id,
       snapshotEvents: () => events,
       header,
-      // Mirrors the real `Session.seq` (the next event's sequence number —
+      // Mirrors the real `Session.seq` (the next event's sequence number 閳?
       // always the log length): the P5 `session/event` driver stamps emitted
       // events with it.
       get seq() {
@@ -125,6 +145,14 @@ export function makeAgent(
       if (header === undefined || header.config.provider !== FALLBACKS_PROVIDER) {
         route.provider = provider
         route.model = model
+      } else if (provider !== FALLBACKS_PROVIDER && model !== FALLBACKS_CHAIN_MODEL) {
+        // A router-served session never logs the concrete hop: the switch rides
+        // the forced dispatch route (`agent/request` applies the pending switch
+        // 閳?`forceRoute`). Recording a CONCRETE pair as the pin is what makes
+        // "this session now runs on X" observable to the next decision. A
+        // virtual pair means the delegate still owns the hop, so the existing
+        // pin (or the chain head when there is none) stays in charge.
+        pinForcedRoute(id, { provider, model, effort: '' })
       }
       options.provider = provider
       options.model = model
@@ -147,7 +175,7 @@ export function llmRetryEvents(agent: Agent): SessionEvent<'llm/retry'>[] {
  * (llm-retry `src/types.ts`: `retryId` / `turn` / `step` / `provider` /
  * `mode` / `policyKey` / `retry` / [`maxRetries` for normal] / `delayMs` /
  * `failure`). Task 4 uses the full shape so the always-cap counting is
- * exercised against the real bundle's event shape (T3 fix review ⚠️2 — the
+ * exercised against the real bundle's event shape (T3 fix review 閳跨媴绗? 閳?the
  * `mode` discriminator must survive the real payload).
  */
 export function appendLlmRetry(
@@ -173,7 +201,7 @@ export function appendLlmRetry(
   const failure = data.failure ?? { message: 'busy', code: mode === 'normal' ? 'RATE_LIMIT' : 'SERVER' }
   // Real shape (llm-retry `src/types.ts`): `retryId` is a branded `RetryId`,
   // `maxRetries` is REQUIRED on the normal variant (and must stay absent on
-  // the always variant — excess-property check). Branching on the literal
+  // the always variant 閳?excess-property check). Branching on the literal
   // `mode` lets the object literal satisfy the discriminated union.
   if (mode === 'normal') {
     agent.session.append('llm/retry', {
@@ -208,7 +236,7 @@ export function appendLlmRetry(
  * plugin listens on (plan fallbacks-half-open-recovery P5 driver): the
  * post-commit append firehose the P3 success-observation listener consumes.
  * The message is a real `createAssistantMessage` (dsh-llm) carrying the
- * producing route's `provider`/`model` provenance — the actual producing
+ * producing route's `provider`/`model` provenance 閳?the actual producing
  * route, so a probe served through the virtual FallbacksChain/Auto adapter
  * matches its real head's key.
  */
@@ -241,7 +269,7 @@ export function emitAssistantMessage(
   })
 }
 
-/** Drive one `agent/request-error` waterfall (the loop's dispatch, spec §5 table). */
+/** Drive one `agent/request-error` waterfall (the loop's dispatch, spec 鎼? table). */
 export function dispatchRequestError(
   ctx: Context,
   agent: Agent,
@@ -257,7 +285,7 @@ export function dispatchRequestError(
     agent,
     turn: overrides.turn ?? 1,
     step: overrides.step ?? 1,
-    // The loop reports the provider the REQUEST was built for — for a session
+    // The loop reports the provider the REQUEST was built for 閳?for a session
     // served through the virtual delegate that is `FallbacksChain`, never the
     // concrete route the delegate happens to dispatch to.
     provider: overrides.provider ?? (agent.session.requestHeader()?.config.provider ?? 'mock'),
@@ -268,15 +296,29 @@ export function dispatchRequestError(
 }
 
 /**
- * Drive one `agent/request` waterfall (the loop's buildRequest, spec §5 table).
+ * Drive one `agent/request` waterfall (the loop's buildRequest, spec 鎼? table).
  *
  * M-02: mirrors the real agent loop, which folds (logs) the request header
- * with the served route after buildRequest — the effective config returned by
+ * with the served route after buildRequest 閳?the effective config returned by
  * the waterfall is written back into the fake session's route, so
  * `currentModel` reads the actually-served provider/model on the next
  * `agent/request-error` without the test author hand-syncing `setRoute`.
  * `setRoute` degrades to an explicit override for tests that route manually.
  */
+/**
+ * Model the user re-picking a concrete model in the picker: the host logs that
+ * selection, and the dispatch-time forced route an earlier switch pinned no
+ * longer describes the session, so it is dropped too.
+ */
+export function selectConcrete(agent: Agent, route: { provider: string; model: string }): void {
+  clearForcedRoute((agent.session as { id?: string }).id ?? agent.id)
+  const header = agent.session.requestHeader()
+  if (header !== undefined) {
+    header.config.provider = route.provider
+    header.config.model = route.model
+  }
+}
+
 export async function dispatchRequestProposal(
   ctx: Context,
   agent: Agent,
@@ -293,7 +335,7 @@ export async function dispatchRequestProposal(
   if (header !== undefined) {
     // The real loop logs the FROZEN step selection, never the proposal: a
     // router-served session keeps its virtual pair even when the plugin (or a
-    // caller) proposes a concrete route — the redirect happens inside the
+    // caller) proposes a concrete route 閳?the redirect happens inside the
     // adapter. A virtual proposal IS a selection change (e.g. picking a named
     // chain), so it is logged like the host would.
     if (isVirtualRoute(config.provider, config.model) || !isVirtualRoute(header.config.provider, header.config.model)) {
@@ -308,7 +350,7 @@ export async function dispatchRequestProposal(
  * The route the delegate actually dispatches for this agent right now: the
  * session's forced route (set by a committed switch) wins over the config the
  * loop proposed. This is what a caller of `dispatchRequest` used to observe
- * directly, back when the plugin rewrote the proposed config itself — the host
+ * directly, back when the plugin rewrote the proposed config itself 閳?the host
  * now freezes that config, so the redirect happens inside the adapter instead.
  */
 export function servedRouteOf(agent: Agent, config: LlmCallConfig): LlmCallConfig {
@@ -324,7 +366,7 @@ export function servedRouteOf(agent: Agent, config: LlmCallConfig): LlmCallConfi
 
 /**
  * Drive one `agent/request` waterfall and report the route that would be
- * dispatched — the served route (see `servedRouteOf`), which equals the
+ * dispatched 閳?the served route (see `servedRouteOf`), which equals the
  * proposed config when no switch is in flight.
  */
 export async function dispatchRequest(
@@ -337,7 +379,7 @@ export async function dispatchRequest(
 }
 
 /**
- * Provider retry policy with `mode: 'normal'` (llm-retry semantics; default retryable codes per spec §2 note).
+ * Provider retry policy with `mode: 'normal'` (llm-retry semantics; default retryable codes per spec 鎼? note).
  * The overrides type is the distributive partial over both resolved variants
  * (`ResolvedRetryPolicy` is a concrete union, so a plain `Omit` would only
  * expose the common keys).
@@ -354,7 +396,7 @@ export function normalPolicy(overrides: Partial<Omit<ResolvedNormalRetryPolicy, 
   }
 }
 
-/** Provider retry policy with `mode: 'always'` (unbounded retries — the cap mechanism's subject). */
+/** Provider retry policy with `mode: 'always'` (unbounded retries 閳?the cap mechanism's subject). */
 export function alwaysPolicy(overrides: Partial<Omit<ResolvedRetryPolicy, 'mode'>> = {}): ResolvedRetryPolicy {
   return {
     mode: 'always',
@@ -371,7 +413,7 @@ export function alwaysPolicy(overrides: Partial<Omit<ResolvedRetryPolicy, 'mode'
  * mirroring the real class (`packages/llm/llm/src/index.ts`):
  * `(message, code, options?)` with a frozen serializable `failure`. The loop
  * constructs the terminal error as `new LlmError(failure.message,
- * failure.code, failure)` (spec §6) — the failure object doubles as the
+ * failure.code, failure)` (spec 鎼?) 閳?the failure object doubles as the
  * options bag.
  */
 export class LlmError extends Error {
@@ -403,9 +445,9 @@ export type StepAttempt = LlmFailure | undefined
 
 export interface StepResult {
   outcome: 'success' | 'error'
-  /** Terminal `LlmError` when the step ended in error — original code/message preserved (spec §6). */
+  /** Terminal `LlmError` when the step ended in error 閳?original code/message preserved (spec 鎼?). */
   error?: LlmError
-  /** Routes dispatched per attempt (the served route — a committed switch shows up here). */
+  /** Routes dispatched per attempt (the served route 閳?a committed switch shows up here). */
   requests: LlmCallConfig[]
   /** Configs the `agent/request` waterfall proposed per attempt (the host-frozen selection). */
   proposals: LlmCallConfig[]

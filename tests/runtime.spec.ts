@@ -5,9 +5,9 @@
  * real `@deepseek-ai/dsh-settings` mounted over an in-memory provider
  * (`tests/support/memory-settings.ts`).
  *
- * Covers the request-error → request switch closed loop, role resolution +
- * chain concatenation under the new model (spec §7: root with no matching
- * rule → built-in `'inherit'` → `rootChain`; a matching rule → the declared
+ * Covers the request-error 閳?request switch closed loop, role resolution +
+ * chain concatenation under the new model (spec 鎼?: root with no matching
+ * rule 閳?built-in `'inherit'` 閳?`rootChain`; a matching rule 閳?the declared
  * role's chain with append-not-replace inherit; `'none'` isolation; an
  * explicit `'inherit'` rule; undeclared-role defense), coexistence order
  * with an llm-retry-like listener, always-mode downstream-first delegation
@@ -22,7 +22,7 @@
  * `tests/coexist-llm-retry.spec.ts`, `tests/always-mode.spec.ts`).
  *
  * The waterfall drivers / fake agent / config helper were extracted to
- * `tests/support/harness.ts` (Task 4) and are imported here — the Task 4
+ * `tests/support/harness.ts` (Task 4) and are imported here 閳?the Task 4
  * spec files reuse the same seam.
  */
 
@@ -62,7 +62,7 @@ afterEach(async () => {
 /**
  * Capture every ctx.logger export (info/warn/...) from this point on.
  * The exporter threshold defaults to the logger level (INFO), which would
- * drop warn records — `levels.default` = DEBUG (3) lets warn (2) flow.
+ * drop warn records 閳?`levels.default` = DEBUG (3) lets warn (2) flow.
  */
 function captureLogs(): Array<{ type: string; args: unknown[] }> {
   const logs: Array<{ type: string; args: unknown[] }> = []
@@ -75,7 +75,7 @@ function role(id: string, chain: string[], fallback: 'inherit-root' | 'none' = '
   return { id, persona: '', chain, fallback }
 }
 
-describe('request-error → request switch closed loop', () => {
+describe('request-error 閳?request switch closed loop', () => {
   it('decides on a trigger code, records the switch, and applies it at the next request', async () => {
     const { agent } = makeAgent('agent-loop', { provider: 'mock', model: 'gpt-4o' })
     apply(ctx, cfg({ rootChain: ['mock/gpt-4o', 'other/gpt-4o'] }))
@@ -85,14 +85,16 @@ describe('request-error → request switch closed loop', () => {
     // Stop-write (issue #52): the switch happens but no durable event is written.
     expect(switchEvents(agent)).toHaveLength(0)
 
-    // Retry buildRequest: the pending switch overrides provider/model and
-    // drops any inherited reasoningEffort (installModelSelection pattern).
+    // Retry buildRequest: the pending switch is applied at `agent/request`,
+    // which pins the served hop (the request itself keeps naming the virtual
+    // route). The pin replaces provider/model only 閳?the caller's
+    // reasoningEffort is inherited.
     const config = await dispatchRequest(ctx, agent, {
       provider: 'mock',
       model: 'gpt-4o',
       reasoningEffort: 'high' as ReasoningEffortId,
     })
-    expect(config).toEqual({ provider: 'other', model: 'gpt-4o' })
+    expect(config).toMatchObject({ provider: 'other', model: 'gpt-4o' })
 
     // Applied + cleared: a later request at the same (turn, step) is untouched.
     const again = await dispatchRequest(ctx, agent, { provider: 'other', model: 'gpt-4o' })
@@ -117,8 +119,8 @@ describe('request-error → request switch closed loop', () => {
     expect(switchEvents(agent)).toHaveLength(0)
   })
 
-  it('passes through with no configured content (AC-8 — the removed enabled switch re-keyed)', async () => {
-    // Plan fallbacks-web-ux-alignment T2: no `enabled: false` term exists —
+  it('passes through with no configured content (AC-8 閳?the removed enabled switch re-keyed)', async () => {
+    // Plan fallbacks-web-ux-alignment T2: no `enabled: false` term exists 閳?
     // an empty config (no chains/slots/roles) is a pass-through exactly like
     // an uninstalled plugin.
     const { agent } = makeAgent('agent-inactive', { provider: 'mock', model: 'gpt-4o' })
@@ -130,10 +132,10 @@ describe('request-error → request switch closed loop', () => {
   })
 })
 
-describe('role resolution + chain concatenation (spec §7)', () => {
+describe('role resolution + chain concatenation (spec 鎼?)', () => {
   it('routes root with no matching rule to rootChain via the built-in inherit role', async () => {
-    // A rule exists but targets subagent origin only — the root agent must
-    // not match it and resolves to 'inherit' → rootChain.
+    // A rule exists but targets subagent origin only 閳?the root agent must
+    // not match it and resolves to 'inherit' 閳?rootChain.
     const { agent } = makeAgent('agent-root', { provider: 'mock', model: 'gpt-4o' })
     apply(ctx, cfg({
       rootChain: ['mock/gpt-4o', 'other/gpt-4o'],
@@ -172,9 +174,9 @@ describe('role resolution + chain concatenation (spec §7)', () => {
   it('canonicalizes a padded declared id: list " coder " + rule "coder" resolves to the declared role (qc2 F-001)', async () => {
     // The startup validator accepts this config (both sides trimmed,
     // client-canonical trim alignment); the runtime must NOT silently
-    // degrade to 'inherit' → rootChain. The declared role's chain must be
+    // degrade to 'inherit' 閳?rootChain. The declared role's chain must be
     // used, proving the padded id resolves (declared raw id returned, roleDef
-    // lookup trim-consistent) — no silent inertness.
+    // lookup trim-consistent) 閳?no silent inertness.
     const { agent } = makeAgent('agent-padded', { provider: 'mock', model: 'gpt-4o' }, { origin: 'subagent' })
     apply(ctx, cfg({
       rootChain: ['third/x'],
@@ -187,7 +189,7 @@ describe('role resolution + chain concatenation (spec §7)', () => {
     const action = await dispatchRequestError(ctx, agent)
     expect(action).toEqual({ kind: 'retry' })
     // Stop-write: no durable event; the switch still routes to the declared
-    // chain (other/gpt-4o), not the rootChain fallback (third/x) — proving the
+    // chain (other/gpt-4o), not the rootChain fallback (third/x) 閳?proving the
     // padded id resolved to the declared role.
     expect(switchEvents(agent)).toHaveLength(0)
     expect(await dispatchRequest(ctx, agent, { provider: 'mock', model: 'gpt-4o' }))
@@ -196,9 +198,13 @@ describe('role resolution + chain concatenation (spec §7)', () => {
 
   it('appends rootChain after the role chain by default (inherit-root, append-not-replace)', async () => {
     // The role chain's only entry equals the current model (filtered), so
-    // the appended rootChain tail must still be reachable — the switch to
+    // the appended rootChain tail must still be reachable 閳?the switch to
     // third/x proves the concatenation (role entries first, rootChain last).
-    const { agent } = makeAgent('agent-inherit', { provider: 'mock', model: 'gpt-4o' }, { origin: 'subagent' })
+    const { agent } = makeAgent(
+      'agent-inherit',
+      { provider: 'mock', model: 'gpt-4o', serving: { provider: 'mock', model: 'gpt-4o' } },
+      { origin: 'subagent' },
+    )
     apply(ctx, cfg({
       rootChain: ['third/x'],
       roles: {
@@ -210,7 +216,7 @@ describe('role resolution + chain concatenation (spec §7)', () => {
     const action = await dispatchRequestError(ctx, agent)
     expect(action).toEqual({ kind: 'retry' })
     // Stop-write: no durable event; the switch still routes to the appended
-    // rootChain tail (third/x) — the concatenation is proven by the route.
+    // rootChain tail (third/x) 閳?the concatenation is proven by the route.
     expect(switchEvents(agent)).toHaveLength(0)
     expect(await dispatchRequest(ctx, agent, { provider: 'mock', model: 'gpt-4o' }))
       .toEqual({ provider: 'third', model: 'x' })
@@ -226,12 +232,12 @@ describe('role resolution + chain concatenation (spec §7)', () => {
       },
     }))
 
-    // First failure: role chain wins → other/gpt-4o.
+    // First failure: role chain wins 閳?other/gpt-4o.
     expect((await dispatchRequestError(ctx, agent))).toEqual({ kind: 'retry' })
     setRoute('other', 'gpt-4o')
 
     // Same-step failure at other: the only role-chain candidate equals the
-    // current model and rootChain must NOT be consulted ('none') → no-op.
+    // current model and rootChain must NOT be consulted ('none') 閳?no-op.
     const second = await dispatchRequestError(ctx, agent, { provider: 'other' })
     expect(second).toBeUndefined()
     expect(switchEvents(agent)).toHaveLength(0)
@@ -253,7 +259,7 @@ describe('role resolution + chain concatenation (spec §7)', () => {
       .toEqual({ provider: 'other', model: 'gpt-4o' })
   })
 
-  it('defends an undeclared role reference: warn + fall back to inherit → rootChain (no crash)', async () => {
+  it('defends an undeclared role reference: warn + fall back to inherit 閳?rootChain (no crash)', async () => {
     const logs = captureLogs()
     const { agent } = makeAgent('agent-ghost', { provider: 'mock', model: 'gpt-4o' }, { origin: 'subagent' })
     apply(ctx, cfg({
@@ -268,7 +274,7 @@ describe('role resolution + chain concatenation (spec §7)', () => {
     expect(logs.some((message) => message.type === 'warn'
       && String(message.args[0]).includes('legacy config keys detected'))).toBe(true)
 
-    // Decision: resolveRole warns and resolves to 'inherit' → rootChain.
+    // Decision: resolveRole warns and resolves to 'inherit' 閳?rootChain.
     const action = await dispatchRequestError(ctx, agent)
     expect(action).toEqual({ kind: 'retry' })
     // Stop-write: no durable event; the fallback still routes to rootChain.
@@ -276,7 +282,7 @@ describe('role resolution + chain concatenation (spec §7)', () => {
     expect(await dispatchRequest(ctx, agent, { provider: 'mock', model: 'gpt-4o' }))
       .toEqual({ provider: 'other', model: 'gpt-4o' })
     // The decision-path warn flows through the plugin logger (qc2 F-002),
-    // NOT console — the runtime message is the 'falling back' variant
+    // NOT console 閳?the runtime message is the 'falling back' variant
     // (distinct from the startup validator's 'expected one of ...' variant).
     expect(logs.some((message) => message.type === 'warn'
       && String(message.args[0]).includes('falling back to "inherit"'))).toBe(true)
@@ -287,7 +293,7 @@ describe('diagnostic snapshot mirrors resolveChainViews concatenation (T2 fix I1
   // /fallbacks shows the same chain the runtime would walk (chains.ts
   // resolveChainViews single walk), model-independent. Regression anchor:
   // a declared role with an EMPTY own chain under fallback 'none' resolves
-  // to [] at runtime — the diagnostic must not fall back to rootChain.
+  // to [] at runtime 閳?the diagnostic must not fall back to rootChain.
   it('shows an empty chain for a declared role with no chain under fallback none', () => {
     expect(resolveChainForDiagnostic([role('reviewer', [], 'none')], ['other/gpt-4o'], 'reviewer')).toEqual({
       chainRole: false,
@@ -337,8 +343,8 @@ describe('diagnostic snapshot mirrors resolveChainViews concatenation (T2 fix I1
 describe('default-config no-op (AC-3: enabled default OFF flips nothing at runtime)', () => {
   it('passes trigger-code failures and requests through with zero events on the default config', async () => {
     const { agent } = makeAgent('agent-ac3', { provider: 'mock', model: 'gpt-4o' })
-    // The true spec default — `enabled: false`, empty rootChain — must behave
-    // exactly like an uninstalled plugin (readme-settings spec §1.3: the
+    // The true spec default 閳?`enabled: false`, empty rootChain 閳?must behave
+    // exactly like an uninstalled plugin (readme-settings spec 鎼?.3: the
     // default-value flip does not change the runtime gating).
     apply(ctx, defaultFallbacksConfig)
 
@@ -357,9 +363,9 @@ describe('default-config no-op (AC-3: enabled default OFF flips nothing at runti
 
 describe('SERVER retry exhaustion', () => {
   it('keeps provider retries first, then switches on the default SERVER trigger and succeeds', async () => {
-    const handle = makeAgent('server-exhaustion', { provider: 'mock', model: 'primary' })
+    const handle = makeAgent('server-exhaustion', { provider: 'mock', model: 'primary', serving: { provider: 'mock', model: 'primary' } })
     installLlmRetryStub(ctx)
-    apply(ctx, cfg({ rootChain: ['other/backup'] }))
+    apply(ctx, cfg({ rootChain: ['mock/primary', 'other/backup'] }))
     const failure = { code: 'SERVER', message: 'upstream returned 503', status: 503 }
     const result = await runAgentStep(ctx, handle, [failure, failure, failure, undefined], {
       retryPolicy: normalPolicy({ maxRetries: 2 }),
@@ -458,7 +464,7 @@ describe('always mode: downstream first, cap at agent/request (ADR-2)', () => {
       model: 'gpt-4o',
       reasoningEffort: 'high' as ReasoningEffortId,
     })
-    expect(switched).toEqual({ provider: 'other', model: 'gpt-4o' })
+    expect(switched).toMatchObject({ provider: 'other', model: 'gpt-4o' })
     // Stop-write: the cap switch applies but no durable event is written.
     expect(switchEvents(agent)).toHaveLength(0)
   })
@@ -467,7 +473,7 @@ describe('always mode: downstream first, cap at agent/request (ADR-2)', () => {
     const { agent } = makeAgent('agent-cap-scope', { provider: 'mock', model: 'gpt-4o' })
     apply(ctx, cfg({ rootChain: ['mock/gpt-4o', 'other/gpt-4o'], alwaysModeRetryCap: 3 }))
 
-    // Five retries but for a different step/provider — cap must not trip.
+    // Five retries but for a different step/provider 閳?cap must not trip.
     for (let retry = 1; retry <= 5; retry += 1) {
       appendLlmRetry(agent, { turn: 1, step: 2, provider: 'other', mode: 'always', policyKey: 'always', retry })
     }
@@ -480,9 +486,9 @@ describe('always mode: downstream first, cap at agent/request (ADR-2)', () => {
     const { agent } = makeAgent('agent-cap-normal', { provider: 'mock', model: 'gpt-4o' })
     apply(ctx, cfg({ rootChain: ['mock/gpt-4o', 'other/gpt-4o'], alwaysModeRetryCap: 3 }))
 
-    // A normal-mode provider retrying RATE_LIMIT with maxRetries ≥ cap: those
+    // A normal-mode provider retrying RATE_LIMIT with maxRetries 閳?cap: those
     // bounded retries belong to llm-retry and must not preempt-switch the
-    // fallback (spec §2 clause 5 — the cap is an always-mode mechanism).
+    // fallback (spec 鎼? clause 5 閳?the cap is an always-mode mechanism).
     for (let retry = 1; retry <= 5; retry += 1) {
       appendLlmRetry(agent, {
         turn: 1,
@@ -535,7 +541,7 @@ describe('decision-path candidate filtering (T2 review Important #1)', () => {
       listModels: async (provider: string) =>
         (provider === 'other' ? [{ provider, id: 'gpt-4o', name: 'gpt-4o' }] : []),
     })
-    const { agent } = makeAgent('agent-wild-present', { provider: 'mock', model: 'gpt-4o' }, { origin: 'subagent' })
+    const { agent } = makeAgent('agent-wild-present', { provider: 'mock', model: 'gpt-4o', serving: { provider: 'mock', model: 'gpt-4o' } }, { origin: 'subagent' })
     apply(ctx, cfg({
       roles: {
         list: [role('coder', ['other/*'])],
@@ -551,7 +557,7 @@ describe('decision-path candidate filtering (T2 review Important #1)', () => {
       .toEqual({ provider: 'other', model: 'gpt-4o' })
   })
 
-  it('never existence-filters explicitly listed exact entries (spec §2 clause 2)', async () => {
+  it('never existence-filters explicitly listed exact entries (spec 鎼? clause 2)', async () => {
     ctx.provide('llm', { listModels: async () => [] })
     const { agent } = makeAgent('agent-exact', { provider: 'mock', model: 'gpt-4o' }, { origin: 'subagent' })
     apply(ctx, cfg({
@@ -576,7 +582,7 @@ describe('decision-path candidate filtering (T2 review Important #1)', () => {
     apply(ctx, cfg({ rootChain: ['mock/gpt-4o', 'other/gpt-4o'] }))
 
     // Exact-entry chains only: the existence probe is pure waste on the
-    // error-recovery critical path — it must not run at all.
+    // error-recovery critical path 閳?it must not run at all.
     const action = await dispatchRequestError(ctx, agent)
     expect(action).toEqual({ kind: 'retry' })
     // Stop-write: no durable event; the exact-entry switch still applies.
@@ -588,7 +594,7 @@ describe('decision-path candidate filtering (T2 review Important #1)', () => {
     const listModels = vi.fn(async (provider: string) =>
       (provider === 'other' ? [{ id: 'gpt-4o' }] : []))
     ctx.provide('llm', { listModels })
-    const { agent } = makeAgent('f002-wild', { provider: 'mock', model: 'gpt-4o' }, { origin: 'subagent' })
+    const { agent } = makeAgent('f002-wild', { provider: 'mock', model: 'gpt-4o', serving: { provider: 'mock', model: 'gpt-4o' } }, { origin: 'subagent' })
     apply(ctx, cfg({
       roles: {
         list: [role('coder', ['other/*'])],
@@ -608,13 +614,13 @@ describe('decision-path candidate filtering (T2 review Important #1)', () => {
     const { agent, setRoute } = makeAgent('agent-suppress', { provider: 'mock', model: 'gpt-4o' })
     apply(ctx, cfg({ rootChain: ['mock/gpt-4o', 'other/gpt-4o'] }))
 
-    // Failure 1: mock/gpt-4o → other/gpt-4o (mock is now cooled AND step-failed).
+    // Failure 1: mock/gpt-4o 閳?other/gpt-4o (mock is now cooled AND step-failed).
     const first = await dispatchRequestError(ctx, agent)
     expect(first).toEqual({ kind: 'retry' })
     setRoute('other', 'gpt-4o')
 
     // Failure 2 in the same step: mock (cooldown + failed) and other (== current)
-    // are both excluded → no candidate → passthrough, original error semantics.
+    // are both excluded 閳?no candidate 閳?passthrough, original error semantics.
     const second = await dispatchRequestError(ctx, agent, { provider: 'other' })
     expect(second).toBeUndefined()
     expect(switchEvents(agent)).toHaveLength(0)
@@ -628,8 +634,8 @@ describe('decision-path candidate filtering (T2 review Important #1)', () => {
     expect(first).toEqual({ kind: 'retry' })
     setRoute('other', 'gpt-4o')
 
-    // New step: the failed set reset, but mock is still in cooldown → still no
-    // switch back (revert waits for cooldown expiry — US-4).
+    // New step: the failed set reset, but mock is still in cooldown 閳?still no
+    // switch back (revert waits for cooldown expiry 閳?US-4).
     const second = await dispatchRequestError(ctx, agent, { provider: 'other', step: 2 })
     expect(second).toBeUndefined()
     expect(switchEvents(agent)).toHaveLength(0)
@@ -643,14 +649,14 @@ describe('decision-path candidate filtering (T2 review Important #1)', () => {
     setRoute('b', 'x')
     expect((await dispatchRequestError(ctx, agent, { provider: 'b' }))).toEqual({ kind: 'retry' })
     setRoute('c', 'x')
-    // switchCount is 2 ≥ 2 → no decision even though d/x is available.
+    // switchCount is 2 閳?2 閳?no decision even though d/x is available.
     const third = await dispatchRequestError(ctx, agent, { provider: 'c' })
     expect(third).toBeUndefined()
     expect(switchEvents(agent)).toHaveLength(0)
   })
 })
 
-describe('switch log skip reasons (spec §2 行为可见性; T3 review Minor 1)', () => {
+describe('switch log skip reasons (spec 鎼? 鐞涘奔璐熼崣顖濐潌閹? T3 review Minor 1)', () => {
   /** The `candidates=%o` array arg of the nth switch info log line. */
   function switchLogCandidates(logs: Array<{ type: string; args: unknown[] }>, index: number): unknown[] {
     const switchLogs = logs.filter((message) => message.type === 'info' && String(message.args[0]).includes('switch'))
@@ -663,7 +669,7 @@ describe('switch log skip reasons (spec §2 行为可见性; T3 review Minor 1)'
     const { agent, setRoute } = makeAgent('agent-log', { provider: 'mock', model: 'gpt-4o' })
     apply(ctx, cfg({ rootChain: ['mock/gpt-4o', 'other/gpt-4o', 'third/x'] }))
 
-    // Failure 1: mock is the current model → same-as-current; other/gpt-4o wins.
+    // Failure 1: mock is the current model 閳?same-as-current; other/gpt-4o wins.
     expect((await dispatchRequestError(ctx, agent))).toEqual({ kind: 'retry' })
     expect(switchLogCandidates(logs, 0)).toEqual([
       'mock/gpt-4o (skipped: same-as-current)',
@@ -673,7 +679,7 @@ describe('switch log skip reasons (spec §2 行为可见性; T3 review Minor 1)'
     setRoute('other', 'gpt-4o')
 
     // Failure 2 at other (same step): mock is cooled AND step-failed (cooldown
-    // wins precedence), other == current → third/x wins.
+    // wins precedence), other == current 閳?third/x wins.
     expect((await dispatchRequestError(ctx, agent, { provider: 'other' }))).toEqual({ kind: 'retry' })
     expect(switchLogCandidates(logs, 1)).toEqual([
       'mock/gpt-4o (skipped: cooldown)',
@@ -688,7 +694,7 @@ describe('switch log skip reasons (spec §2 行为可见性; T3 review Minor 1)'
         (provider === 'other' ? [] : [{ provider, id: 'gpt-4o', name: 'gpt-4o' }]),
     })
     const logs = captureLogs()
-    const { agent } = makeAgent('agent-log-missing', { provider: 'mock', model: 'gpt-4o' }, { origin: 'subagent' })
+    const { agent } = makeAgent('agent-log-missing', { provider: 'mock', model: 'gpt-4o', serving: { provider: 'mock', model: 'gpt-4o' } }, { origin: 'subagent' })
     apply(ctx, cfg({
       roles: {
         list: [role('coder', ['other/*', 'local/*'])],
@@ -704,8 +710,8 @@ describe('switch log skip reasons (spec §2 行为可见性; T3 review Minor 1)'
   })
 })
 
-describe('countRetryEvents — always-mode counting + fast path (T3 review Minor 4)', () => {
-  /** Minimal session double — `countRetryEvents` only reads `session.snapshotEvents()`. */
+describe('countRetryEvents 閳?always-mode counting + fast path (T3 review Minor 4)', () => {
+  /** Minimal session double 閳?`countRetryEvents` only reads `session.snapshotEvents()`. */
   function sessionWith(events: Array<{ type: string; data: Record<string, unknown> }>): Session {
     return { snapshotEvents: () => events as unknown as SessionEvent[] } as unknown as Session
   }
@@ -721,7 +727,7 @@ describe('countRetryEvents — always-mode counting + fast path (T3 review Minor
   })
 
   it('counts only always-mode retries at the exact (turn, step, provider)', () => {
-    // Append-ordered log (oldest first — the session log is append-only).
+    // Append-ordered log (oldest first 閳?the session log is append-only).
     const events: Array<{ type: string; data: Record<string, unknown> }> = [
       { type: 'llm/retry', data: { turn: 1, step: 9, provider: 'mock', mode: 'always', policyKey: 'always', retry: 1 } },
       { type: 'llm/retry', data: { turn: 2, step: 3, provider: 'mock', mode: 'normal', policyKey: 'normal', retry: 1 } },
@@ -781,7 +787,7 @@ describe('lazy per-agent state on agent/request (T3 review Minor 3)', () => {
 
   it('does not create a state entry when every candidate is filtered out (F-004)', async () => {
     const { agent } = makeAgent('f004-filtered', { provider: 'mock', model: 'gpt-4o' })
-    // The only candidate equals the current model → filtered as same-as-current.
+    // The only candidate equals the current model 閳?filtered as same-as-current.
     apply(ctx, cfg({ rootChain: ['mock/gpt-4o'] }))
 
     expect(await dispatchRequestError(ctx, agent)).toBeUndefined()
@@ -811,13 +817,13 @@ describe('lazy per-agent state on agent/request (T3 review Minor 3)', () => {
     const { agent } = makeAgent('agent-lazy-cap', { provider: 'mock', model: 'gpt-4o' })
     apply(ctx, cfg({ rootChain: ['mock/gpt-4o', 'other/gpt-4o'], alwaysModeRetryCap: 2 }))
 
-    // Below cap: no switch intent yet → still no state entry.
+    // Below cap: no switch intent yet 閳?still no state entry.
     appendLlmRetry(agent, { turn: 1, step: 1, provider: 'mock', mode: 'always', policyKey: 'always', retry: 1 })
     const below = await dispatchRequest(ctx, agent, { provider: 'mock', model: 'gpt-4o' })
     expect(below).toEqual({ provider: 'mock', model: 'gpt-4o' })
     expect(stateStore(ctx)?.size).toBe(0)
 
-    // At cap: genuine switch intent → state created and the switch applied.
+    // At cap: genuine switch intent 閳?state created and the switch applied.
     appendLlmRetry(agent, { turn: 1, step: 1, provider: 'mock', mode: 'always', policyKey: 'always', retry: 2 })
     const switched = await dispatchRequest(ctx, agent, { provider: 'mock', model: 'gpt-4o' })
     expect(switched).toEqual({ provider: 'other', model: 'gpt-4o' })
@@ -845,7 +851,7 @@ describe('per-agent state lifecycle', () => {
     ctx.emit('agent/disposed', { agent })
     setRoute('other', 'gpt-4o')
 
-    // State gone: mock is no longer cooled/failed → switch back is possible.
+    // State gone: mock is no longer cooled/failed 閳?switch back is possible.
     const after = await dispatchRequestError(ctx, agent, { provider: 'other' })
     expect(after).toEqual({ kind: 'retry' })
     expect(switchEvents(agent)).toHaveLength(0)
@@ -865,7 +871,7 @@ describe('per-agent state lifecycle', () => {
 
 describe('settings live re-read', () => {
   it('re-reads rootChain through the real settings service on update (clearing content deactivates)', async () => {
-    const { agent } = makeAgent('agent-settings', { provider: 'mock', model: 'gpt-4o' })
+    const { agent } = makeAgent('agent-settings', { provider: 'mock', model: 'gpt-4o', serving: { provider: 'mock', model: 'gpt-4o' } })
     const ns = FALLBACKS_PROFILE_ENTRY
     apply(ctx, cfg({ rootChain: ['mock/gpt-4o', 'other/gpt-4o'] }))
 
@@ -876,13 +882,13 @@ describe('settings live re-read', () => {
     setTimeout(settle, 0)
     await settled
 
-    // The settings binding child has fired — its bind-time `describe()` is
+    // The settings binding child has fired 閳?its bind-time `describe()` is
     // the observable (0.1.7-rc.1 has no registration step; the double counts
     // the calls). The stored section is absent, so the composition entry (the
     // cfg() default) resolves.
     expect((ctx.settings as unknown as MemorySettings).describeCalls).toBeGreaterThan(0)
 
-    // A real settings update merges into the user document; scope.watch →
+    // A real settings update merges into the user document; scope.watch 閳?
     // onChange re-reads the source thunk (scope.get()) and re-applies.
     await ctx.settings.update(ns, { rootChain: ['third/x'] })
 
@@ -894,7 +900,7 @@ describe('settings live re-read', () => {
       .toEqual({ provider: 'third', model: 'x' })
 
     // Clearing the LAST configured content deactivates the plugin (content
-    // presence — there is no `enabled: false` write any more, T2).
+    // presence 閳?there is no `enabled: false` write any more, T2).
     await ctx.settings.update(ns, { rootChain: [] })
 
     const inactive = await dispatchRequestError(ctx, agent)
@@ -907,7 +913,7 @@ describe('startup validation + legacy warn (AC-4 warn-not-crash, US-4 migration 
   it('warns on illegal chain entries at startup and treats them as inert', async () => {
     const logs = captureLogs()
     const { agent } = makeAgent('agent-invalid', { provider: 'mock', model: 'gpt-4o' })
-    // 'nope' has no provider/model separator; 'openai/' has an empty model —
+    // 'nope' has no provider/model separator; 'openai/' has an empty model 閳?
     // both fail parseSelector (warn) and never become candidates. The valid
     // entry still resolves, so the switch happens to other/gpt-4o.
     expect(() => apply(ctx, cfg({ rootChain: ['mock/gpt-4o', 'nope', 'other/gpt-4o'] }))).not.toThrow()
@@ -937,7 +943,7 @@ describe('startup validation + legacy warn (AC-4 warn-not-crash, US-4 migration 
       ...defaultFallbacksConfig,
       enabled: true,
       // The removed `chains` map and `roles.default` field survive the
-      // schema (unknown keys retained) — exactly the composed object a
+      // schema (unknown keys retained) 閳?exactly the composed object a
       // pre-migration settings.yaml yields at startup.
       chains: { default: ['other/gpt-4o'], reviewer: ['openai/gpt-4o-mini'] },
       roles: { default: 'default', list: [], rules: [] },

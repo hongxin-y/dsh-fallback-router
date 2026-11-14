@@ -55,7 +55,7 @@ Merging the PR runs `Release`: it cross-checks the version against the PR title,
 
 ## Release checklist
 
-- [ ] CI green on `main` (see [testing-status.md](testing-status.md) for the currently known-failing specs).
+- [ ] CI green on `main` (see [testing-status.md](testing-status.md) for the suite layout and the 12 intentional skips).
 - [ ] Changelog fragment present and readable.
 - [ ] `pnpm release:validate` passes locally.
 - [ ] Version matches the change.

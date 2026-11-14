@@ -39,11 +39,7 @@ jobs:
           fi
           zstd --version
 
-      # Known-failing while the dispatch-time routing migration lands: see
-      # docs/testing-status.md for the audited list. Drop `continue-on-error`
-      # in the commit that turns the suite green — not before.
       - run: pnpm test
-        continue-on-error: true
 
       - run: pnpm typecheck
 

@@ -293,7 +293,13 @@ describe('half-open runtime integration (plan fallbacks-half-open-recovery P4)',
 
   it('a mid-session flip to timer silences the half-open probe log (qc1 W-001)', async () => {
     const logs = captureLogs()
-    const { agent } = makeAgent('probe-timer-flip', { provider: 'mock', model: 'gpt-4o' })
+    const { agent } = makeAgent('probe-timer-flip', {
+      provider: 'mock',
+      model: 'gpt-4o',
+      // The session is SERVED by the second chain entry (dispatch-time switch
+      // contract: the walk starts at the served route, not at the chain head).
+      serving: { provider: 'anthropic', model: 'claude-3-5-sonnet' },
+    })
     apply(ctx, cfg({ rootChain: ['mock/gpt-4o', 'anthropic/claude-3-5-sonnet'], recovery: 'half-open' }))
     vi.useFakeTimers()
     const t0 = Date.now()

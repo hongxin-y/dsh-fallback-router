@@ -46,6 +46,7 @@ import {
   LlmError,
   makeAgent,
   runAgentStep,
+  selectConcrete,
   switchEvents,
   type AgentHarness,
 } from './support/harness.ts'
@@ -599,6 +600,10 @@ describe('model-selection notice on the virtual route (Task 4)', () => {
 
     // The next request is served on the new selection and logged as such, so
     // the notice does not repeat — the divergence the loop was made of is gone.
+    // The picker change is modelled explicitly: under the dispatch-time switch
+    // contract the loop records the concrete pair the user picked (the harness
+    // only writes a concrete proposal over a concrete header).
+    selectConcrete(agent, flashed)
     expect(await dispatchRequestProposal(ctx, agent, flashed)).toEqual(flashed)
     expect(notices(await dispatchPreStep(agent, 3))).toEqual([])
   })

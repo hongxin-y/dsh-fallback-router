@@ -33,7 +33,7 @@ import { OFFICIAL_FLASH } from '../src/time-slots.ts'
 import { namedFallbackProvider, NAMED_FALLBACK_MODEL } from '../src/config.ts'
 import { selectorKey } from '../src/selectors.ts'
 import { MemorySettings } from './support/memory-settings.ts'
-import { appendLlmRetry, cfg, dispatchRequest, dispatchRequestError, makeAgent } from './support/harness.ts'
+import { appendLlmRetry, cfg, dispatchRequest, dispatchRequestError, makeAgent, selectConcrete } from './support/harness.ts'
 
 /** The virtual picker row as a request seed (exact strings, spec lock). */
 const virtualSeed = { provider: FALLBACKS_PROVIDER, model: FALLBACKS_CHAIN_MODEL }
@@ -87,7 +87,7 @@ describe('named chain request identity', () => {
 
     for (const model of ['third', 'fourth']) {
       expect(await dispatchRequestError(ctx, agent, { provider: served.provider })).toEqual({ kind: 'retry' })
-      served = await dispatchRequest(ctx, agent, served)
+      served = await dispatchRequest(ctx, agent, namedSeed)
       expect(served).toEqual({ provider: 'named', model })
     }
     expect(await dispatchRequestError(ctx, agent, { provider: served.provider })).toBeUndefined()
@@ -105,10 +105,10 @@ describe('named chain request identity', () => {
     const served = await dispatchRequest(ctx, agent, namedSeed)
     expect(served).toEqual({ provider: 'named', model: 'second' })
     expect(await dispatchRequestError(ctx, agent, { provider: served.provider })).toEqual({ kind: 'retry' })
-    expect(await dispatchRequest(ctx, agent, served)).toEqual({ provider: 'named', model: 'third' })
+    expect(await dispatchRequest(ctx, agent, namedSeed)).toEqual({ provider: 'named', model: 'third' })
   })
 
-  it.each([false, true])('clears named selection on manual concrete selection (already fell back: %s)', async (fallbackFirst) => {
+  it.each([false, true])('a manual concrete pick ends the named session (already fell back: %s)', async (fallbackFirst) => {
     const { agent } = makeAgent('named-manual', { provider: 'mock', model: 'initial' }, { origin: 'root' })
     apply(ctx, cfg({
       rootChain: ['root/next'],
@@ -120,9 +120,12 @@ describe('named chain request identity', () => {
       expect(await dispatchRequest(ctx, agent, namedSeed)).toEqual({ provider: 'named', model: 'second' })
     }
     const manual = { provider: 'manual', model: 'chosen' }
+    selectConcrete(agent, manual)
     expect(await dispatchRequest(ctx, agent, manual)).toEqual(manual)
-    expect(await dispatchRequestError(ctx, agent, { provider: manual.provider })).toEqual({ kind: 'retry' })
-    expect(await dispatchRequest(ctx, agent, manual)).toEqual({ provider: 'root', model: 'next' })
+    // A concrete pick leaves the router-served route: the host freezes the step
+    // selection, so a failure passes through instead of switching away.
+    expect(await dispatchRequestError(ctx, agent, { provider: manual.provider })).toBeUndefined()
+    expect(await dispatchRequest(ctx, agent, manual)).toEqual(manual)
   })
 })
 
@@ -245,8 +248,8 @@ describe('virtual-route pass-through (root agent/request never rewrites)', () =>
     expect(logs.some((message) => message.type === 'warn' && String(message.args[0]).includes('not conforming'))).toBe(false)
   })
 
-  it('a pending failure switch still wins over the virtual seed (applied before this point)', async () => {
-    const { agent } = makeAgent('t2-pending', { provider: 'mock', model: 'gpt-4o' }, { origin: 'root' })
+  it('starts the failure walk at the served slot head and stops when the row is exhausted', async () => {
+    const { agent } = makeAgent('t2-pending', { provider: 'mock', model: 'gpt-4o' }, { origin: 'root', serving: { provider: 'mock', model: 'gpt-4o' } })
     apply(
       ctx,
       cfg({
@@ -257,20 +260,18 @@ describe('virtual-route pass-through (root agent/request never rewrites)', () =>
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2026-08-18T04:00:00Z'))
 
-    // P7 (plan fallbacks-timeslots Task 2): the root-origin failure walk
-    // walks the SLOT-effective chain (replaces the rootChain argument of the
-    // root role's resolveChainViews) → the first failure switches to the
-    // slot head (anthropic), not the all-day head.
+    // P7 (plan fallbacks-timeslots Task 2): the root-origin failure walk walks
+    // the SLOT-effective chain. The session is served by the slot head
+    // (anthropic), so the failure is attributed to it and the first switch
+    // moves past the head to the next candidate - never back onto it.
     expect(await dispatchRequestError(ctx, agent)).toEqual({ kind: 'retry' })
     expect(await dispatchRequest(ctx, agent, virtualSeed))
-      .toEqual({ provider: 'anthropic', model: 'claude-sonnet-4' })
+      .toEqual({ provider: 'openai', model: 'gpt-4o' })
 
-    // Second failure on the slot head: the walk progresses past it (same
-    // model filtered) → the pending switch targets the NEXT effective-chain
-    // candidate.
-    expect(await dispatchRequestError(ctx, agent, { provider: 'anthropic' })).toEqual({ kind: 'retry' })
-    const config = await dispatchRequest(ctx, agent, virtualSeed)
-    expect(config).toEqual({ provider: 'openai', model: 'gpt-4o' })
+    // Second failure on that candidate: a custom row REPLACES the rootChain,
+    // so the walk has nothing left to switch to and the failure passes through.
+    expect(await dispatchRequestError(ctx, agent, { provider: 'openai' })).toBeUndefined()
+    expect(await dispatchRequest(ctx, agent, virtualSeed)).toEqual({ provider: 'openai', model: 'gpt-4o' })
   })
 })
 

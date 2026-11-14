@@ -20,7 +20,7 @@
 
 import { createRequire } from 'node:module'
 import { readFileSync, statSync } from 'node:fs'
-import { dirname, join, resolve } from 'node:path'
+import { dirname, join, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 
@@ -67,7 +67,10 @@ describe('plugin meta + icon (readPluginMeta contract)', () => {
     // realpath confinement (the host resolves + stats the real path and
     // rejects anything escaping the manifest directory): the icon lives at
     // the package root, so the containment check is the root prefix.
-    expect(resolve(iconPath).startsWith(REPO_ROOT + '/')).toBe(true)
+    // Compare separator-normalized paths: on Windows `resolve()` returns
+    // backslashes while the prefix literal is POSIX-shaped.
+    const toPosix = (value: string): string => value.split(sep).join('/')
+    expect(toPosix(resolve(iconPath)).startsWith(toPosix(REPO_ROOT) + '/')).toBe(true)
     expect(real!.size).toBeLessThanOrEqual(ICON_MAX_BYTES)
     expect(iconPath.endsWith('.svg')).toBe(true)
   })

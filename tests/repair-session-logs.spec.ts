@@ -37,7 +37,7 @@ import {
   writeFileSync,
 } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { basename, dirname, join } from 'node:path'
+import { basename, dirname, join, sep } from 'node:path'
 import { createInterface } from 'node:readline'
 import { fileURLToPath } from 'node:url'
 import { afterAll, describe, expect, it } from 'vitest'
@@ -66,6 +66,17 @@ import { decodeZstdFrames, encodeZstdFrames, successorFilename } from '../script
 /* ------------------------------------------------------------------ */
 
 const temporaryDirs: string[] = []
+
+/**
+ * Rewrite a POSIX-shaped fixture path to the platform's separators.
+ *
+ * The CLI renders paths with `join()`, so on Windows a log under
+ * `example-ns/session-a` prints as `example-ns\session-a\...`. Expectations
+ * stay readable as POSIX paths and go through this helper.
+ */
+function fx(value: string): string {
+  return value.split('/').join(sep)
+}
 
 /** One fresh temporary directory, removed when the file finishes. */
 function tempDir(prefix: string): string {
@@ -382,7 +393,7 @@ describe('parseArgs', () => {
   it('defaults to $HOME/.dsh/sessions and every flag off', () => {
     expect(parseArgs([], { HOME: '/tmp/example-home' })).toEqual({
       help: false,
-      root: '/tmp/example-home/.dsh/sessions',
+      root: fx('/tmp/example-home/.dsh/sessions'),
       apply: false,
       classFilter: null,
       catalogPath: undefined,
@@ -395,7 +406,7 @@ describe('parseArgs', () => {
 
   it('prefers $DSH_HOME over $HOME for the default root', () => {
     expect(parseArgs([], { HOME: '/tmp/example-home', DSH_HOME: '/tmp/example-dsh' }).root).toBe(
-      '/tmp/example-dsh/sessions',
+      fx('/tmp/example-dsh/sessions'),
     )
   })
 
@@ -421,8 +432,8 @@ describe('parseArgs', () => {
   it('expands a leading ~ in --root and --catalog against the environment home', () => {
     const env = { HOME: '/tmp/example-home' }
     expect(parseArgs(['--root', '~' ], env).root).toBe('/tmp/example-home')
-    expect(parseArgs(['--root', '~/sessions'], env).root).toBe('/tmp/example-home/sessions')
-    expect(parseArgs(['--catalog', '~/cat'], env).catalogPath).toBe('/tmp/example-home/cat')
+    expect(parseArgs(['--root', '~/sessions'], env).root).toBe(fx('/tmp/example-home/sessions'))
+    expect(parseArgs(['--catalog', '~/cat'], env).catalogPath).toBe(fx('/tmp/example-home/cat'))
   })
 
   it('recognises --help and -h', () => {
@@ -676,7 +687,7 @@ describe('runRepair — report mode without a catalog', () => {
     const out = sink.out()
     expect(out).toContain('report only (no write)')
     expect(out).toContain('catalog: none resolved — classification is STRUCTURAL ONLY')
-    expect(out).toContain('session-descriptor/session.jsonl.zstd (v0)')
+    expect(out).toContain(fx('session-descriptor/session.jsonl.zstd') + ' (v0)')
     expect(out).toMatch(/^ {2}subagent-descriptor-version {2,}/m)
     // An unrepairable log is tokenised `unrepairable`; its class follows in the detail.
     expect(out).toMatch(/^ {2}unrepairable {2,}.*session-switch.*: unknown-event-type/m)
@@ -1002,7 +1013,7 @@ describe('apply', () => {
     expect(code).toBe(1)
     expect(listing(source.dir)).toEqual(['session.jsonl.zstd', 'session.v3.jsonl.zstd'])
     expect(listing(descriptor.dir)).toEqual(['session.jsonl.zstd'])
-    expect(sink.out()).toContain('session-descriptor/session.jsonl.zstd')
+    expect(sink.out()).toContain(fx('session-descriptor/session.jsonl.zstd'))
     expect(sink.out()).toContain('class filter: source-kind')
     expect(sink.out()).toContain('not selected 1')
   })
@@ -1101,8 +1112,8 @@ describe('R-004 — text mode reports each log during the walk', () => {
     // and session-b's line — and no summary, because the walk never finished.
     expect(perLogLines).toBe(2)
     expect(written.join('\n')).toContain('apply (publishes successor generations; originals are never modified)')
-    expect(written.join('\n')).toContain('example-ns/session-a/session.jsonl.zstd (v0):')
-    expect(written.join('\n')).toContain('example-ns/session-b/session.jsonl.zstd (v0):')
+    expect(written.join('\n')).toContain(fx('example-ns/session-a/session.jsonl.zstd') + ' (v0):')
+    expect(written.join('\n')).toContain(fx('example-ns/session-b/session.jsonl.zstd') + ' (v0):')
     expect(written.join('\n')).not.toContain('summary:')
 
     // The death really landed INSIDE the walk: session-c was never inspected, so it
@@ -1766,7 +1777,7 @@ describe('main — fatal arguments and help', () => {
     // header now prints at discovery instead of at the end, which is the same lines
     // in the same order — and it is all a quiet run has to keep on a crash.
     expect(sink.out()).not.toContain('class                        logs')
-    expect(sink.out()).not.toContain('session-ok/session.jsonl.zstd')
+    expect(sink.out()).not.toContain(fx('session-ok/session.jsonl.zstd'))
     expect(sink.out()).toContain('apply (publishes successor generations; originals are never modified)')
     expect(sink.out()).toContain(`root: ${root}`)
     expect(lineAt(sink.out(), 'root: ')).toBeLessThan(lineAt(sink.out(), 'summary: 1 log(s)'))
@@ -1780,12 +1791,15 @@ describe('main — fatal arguments and help', () => {
 
 describe('CLI entry point (child process)', () => {
   const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
-  const TSX_BIN = join(REPO_ROOT, 'node_modules', '.bin', 'tsx')
+  // Spawn `node` with tsx's CLI entry rather than `node_modules/.bin/tsx`:
+  // the bin is a shell shim on Windows (`.cmd`), which spawn cannot execute
+  // without a shell. This form is identical on every platform.
+  const TSX_CLI = join(REPO_ROOT, 'node_modules', 'tsx', 'dist', 'cli.mjs')
   const SCRIPT = join(REPO_ROOT, 'scripts', 'repair-session-logs.ts')
 
   /** Run the real CLI; returns status + combined output. */
   function runCli(args: string[]): { status: number; output: string } {
-    const result = spawnSync(TSX_BIN, [SCRIPT, ...args], {
+    const result = spawnSync(process.execPath, [TSX_CLI, SCRIPT, ...args], {
       encoding: 'utf8',
       cwd: REPO_ROOT,
       // Bound the child: a wedged tsx spawn must fail the test, not hang it.
@@ -1839,7 +1853,7 @@ describe('CLI entry point (child process)', () => {
     lines: number,
   ): Promise<{ status: number; stderr: string; stdout: string }> {
     return new Promise((resolve, reject) => {
-      const child = spawn(TSX_BIN, [SCRIPT, ...args], { cwd: REPO_ROOT })
+      const child = spawn(process.execPath, [TSX_CLI, SCRIPT, ...args], { cwd: REPO_ROOT })
       const err: string[] = []
       const out: string[] = []
       child.stderr.setEncoding('utf8')
@@ -1864,7 +1878,7 @@ describe('CLI entry point (child process)', () => {
     args: string[],
   ): Promise<{ status: number; stdout: string }> {
     return new Promise((resolve, reject) => {
-      const child = spawn(TSX_BIN, [SCRIPT, ...args], { cwd: REPO_ROOT })
+      const child = spawn(process.execPath, [TSX_CLI, SCRIPT, ...args], { cwd: REPO_ROOT })
       const out: string[] = []
       child.stdout.setEncoding('utf8')
       child.stdout.on('data', (chunk: string) => out.push(chunk))
@@ -2154,9 +2168,12 @@ describe.skipIf(realCatalog === null)('CLI against the real released catalog', (
 
 /** The current user id, or `null` where the platform does not expose one. */
 const UID = process.getuid?.() ?? null
+// Windows has no effective chmod 000 for the owner and needs a privilege to
+// create symlinks, so the discovery-failure fixtures cannot be built there.
+const WIN32 = process.platform === 'win32'
 
 describe('discovery never fails open (C-1)', () => {
-  it('reports symlinked and irregular entries as skipped instead of dropping them', async () => {
+  it.skipIf(WIN32)('reports symlinked and irregular entries as skipped instead of dropping them', async () => {
     const root = tempDir('rsl-skip-shapes-')
     const healthy = writeGeneration(root, 'good-ns', 'session-ok', 'session.jsonl.zstd', V0_HEADER, [PLAIN_ROW])
     // A symlinked namespace, session and generation, plus a DIRECTORY named like a
@@ -2203,7 +2220,7 @@ describe('discovery never fails open (C-1)', () => {
     expect(text.out()).toContain('skipped 4')
   })
 
-  it.skipIf(UID === 0)('reports an unreadable namespace with its errno and exits 1', async () => {
+  it.skipIf(UID === 0 || WIN32)('reports an unreadable namespace with its errno and exits 1', async () => {
     const root = tempDir('rsl-skip-eacces-')
     writeGeneration(root, 'good-ns', 'session-ok', 'session.jsonl.zstd', V0_HEADER, [PLAIN_ROW])
     const blocked = join(root, 'blocked-ns')
@@ -2224,7 +2241,7 @@ describe('discovery never fails open (C-1)', () => {
     }
   })
 
-  it('folds stale staging and skips into the exit code, the empty-root line and --quiet', async () => {
+  it.skipIf(WIN32)('folds stale staging and skips into the exit code, the empty-root line and --quiet', async () => {
     // A root whose ONLY content is the residue of an interrupted publication: no
     // candidate, no unreadable input — but the store is not "clean", so the run says
     // so everywhere the docs promise it does.
@@ -2266,7 +2283,7 @@ describe('discovery never fails open (C-1)', () => {
     expect(skippedOnly.out()).toContain('skipped 1')
   })
 
-  it.skipIf(UID === 0)('makes an unreadable --root fatal (exit 2) instead of an empty report', async () => {
+  it.skipIf(UID === 0 || WIN32)('makes an unreadable --root fatal (exit 2) instead of an empty report', async () => {
     const root = tempDir('rsl-root-eacces-')
     chmodSync(root, 0o000)
     try {
