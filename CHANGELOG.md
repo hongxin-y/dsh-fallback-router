@@ -6,6 +6,30 @@ All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-11-14
+
+First public release under the `dsh-fallback-router` name, merging the former
+`dsh-llm-fallbacks` and `dsh-llm-response-guard` plugins into one model-centric
+router.
+
+### Added
+
+- Per-model routing profiles: a base route plus an ordered set of extra routes,
+  with an `official` (DeepSeek official flash) or `loop` (wrap back to the first
+  entry) fallback policy.
+- Time-slot windows under a profile, so one exposed profile can answer with a
+  different chain depending on the hour.
+- Per-provider retry policies (attempt cap, window, exponential backoff, jitter).
+- Failure rules by error code, by regular expression, and a structural rule that
+  detects a truncated tool-call markup tail without matching ordinary prose.
+- Desktop settings panel for profiles, providers, rules, and the switch log.
+
+### Changed
+
+- Switching now happens at dispatch time inside the virtual adapter, so a failed
+  request is re-dispatched on the next candidate instead of rewriting the step
+  selection (the host freezes it before the request).
+
 ## [0.6.13] - 2026-10-28
 
 ### Changed
