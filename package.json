@@ -47,7 +47,7 @@
     }
   },
   "scripts": {
-    "build": "tsc -p tsconfig.build.json && tsdown && pnpm run build-client && tsc && node scripts/verify-dist.mjs",
+    "build": "tsc -p tsconfig.build.json && tsdown && pnpm run build-client && node scripts/strip-bundle-comments.mjs && tsc && node scripts/verify-dist.mjs",
     "build-client": "tsx scripts/build-client.ts",
     "release:prepare": "tsx scripts/prepare-release.ts",
     "release:validate": "tsx scripts/validate-release-version.ts",
