@@ -15,15 +15,15 @@ Releases are PR-driven, in two steps:
 | Release prep | `.github/workflows/release-prep.yml` | manual |
 | Release | `.github/workflows/release.yml` | merging a PR titled `release v*` |
 
-## npm publishing is off
+## npm publishing
 
-The registry name `dsh-fallback-router` is available and reserved for this package, but nothing has been published to it yet: the publish step in `release.yml` is gated behind the repository variable `NPM_PUBLISH` and is skipped by default, so the package is currently distributed **from the GitHub source only** (`dsh plugin add github:hongxin-y/dsh-fallback-router`). Tags and GitHub Releases are created either way.
+`dsh-fallback-router` is published to the registry (first version `0.1.0`, 2026-11-14). The publish step in `release.yml` stays gated behind the repository variable `NPM_PUBLISH` so a fork or a dry run can never push to the registry by accident; with `NPM_PUBLISH=true` every merged release PR publishes.
 
 To publish to npm: configure a Trusted Publisher for `dsh-fallback-router` in the npm package settings, then set `NPM_PUBLISH=true`. Publishing is tokenless — the workflow exchanges the GitHub OIDC id-token for registry authentication and signs the build with `--provenance`; no `NPM_TOKEN` / `NODE_AUTH_TOKEN` secret is declared anywhere.
 
 ### Bootstrap: the very first publish
 
-The npm settings page (and therefore the Trusted Publisher form) only exists once the package exists, so the first version has to be pushed once outside the workflow:
+Done once for `0.1.0`; only needed again for a brand-new package name. The npm settings page (and therefore the Trusted Publisher form) only exists once the package exists, so the first version has to be pushed once outside the workflow:
 
 ```bash
 npm login                      # browser flow, on a maintainer's machine

@@ -14,7 +14,11 @@ dsh plugin --profile desktop add github:hongxin-y/dsh-fallback-router
 
 Pin a commit (`#<sha>`) if you want the code that runs to stop changing. pnpm ≥ 10 does not run a git dependency's build script by default, so the first `add` may stop with `ERR_PNPM_GIT_DEP_PREPARE_NOT_ALLOWED`; run `pnpm approve-builds` inside the profile directory (`$DSH_HOME/profiles/desktop`), or add the package to that profile's `pnpm-workspace.yaml` allow list (`allowBuilds`, or `onlyBuiltDependencies` on older pnpm), then run the `add` again. Details, verification and uninstall → [docs/install.md](docs/install.md).
 
-The npm package name is `dsh-fallback-router`, but it is **not published to the registry yet** (the release workflow's npm step is gated off) — install from the GitHub source above.
+The package is also published to the registry as `dsh-fallback-router`, which skips the build step entirely:
+
+```sh
+dsh plugin --profile desktop add dsh-fallback-router
+```
 
 ## 1. The core idea: model profiles
 
