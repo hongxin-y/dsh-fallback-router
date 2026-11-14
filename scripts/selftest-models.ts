@@ -17,6 +17,7 @@ import {
   DEFAULT_RULES_CODES,
   compileModelChain,
   compileRouter,
+  defaultRules,
   degenerateReason,
   failureMatches,
   matchesRules,
@@ -457,11 +458,11 @@ check('a picker-selected model retries by the default rules its provider opted i
 
 // --------------------------------------------------------------- structure ----
 
-const TOOLS = [{ name: 'read' }, { name: 'write' }]
+const TOOLS = ['read', 'write']
 
 check('a truncated tool-call tail is degenerate', () => {
   const message = { role: 'assistant', content: [{ type: 'text', text: 'let me check\n</|DSML|invoke></|DSML|calls>' }] }
-  assert.equal(degenerateReason(message, TOOLS, { markers: [...DEFAULT_MARKERS], structural: true }), 'marker:DSML')
+  assert.equal(degenerateReason(message, TOOLS, { ...defaultRules(), structural: true }), 'marker:DSML')
 })
 
 check('an answer with a tool call is never degenerate', () => {
@@ -472,17 +473,17 @@ check('an answer with a tool call is never degenerate', () => {
       { type: 'tool-call', name: 'read', input: {} },
     ],
   }
-  assert.equal(degenerateReason(message, TOOLS, { markers: [...DEFAULT_MARKERS], structural: true }), undefined)
+  assert.equal(degenerateReason(message, TOOLS, { ...defaultRules(), structural: true }), undefined)
 })
 
 check('plain prose is not degenerate', () => {
   const message = { role: 'assistant', content: [{ type: 'text', text: '工具调用会被截断，例如 </|DSML|invoke> 这样的残片。' }] }
-  assert.equal(degenerateReason(message, TOOLS, { markers: [...DEFAULT_MARKERS], structural: true }), undefined)
+  assert.equal(degenerateReason(message, TOOLS, { ...defaultRules(), structural: true }), undefined)
 })
 
 check('structural detection is skipped when the model exposes no tools', () => {
   const message = { role: 'assistant', content: [{ type: 'text', text: '</|DSML|invoke>' }] }
-  assert.equal(degenerateReason(message, [], { markers: [...DEFAULT_MARKERS], structural: true }), undefined)
+  assert.equal(degenerateReason(message, [], { ...defaultRules(), structural: true }), undefined)
 })
 
 // ----------------------------------------------------------------- retry ----
