@@ -6,6 +6,13 @@ All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
+## [0.1.1-alpha.1] - 2026-11-14
+
+### Changed
+
+- Upgrade `@deepseek-ai/dsh-*` peers to `^0.2.1-rc.5`.
+- Publish to the npm registry: the release workflow now pushes `dsh-fallback-router` with provenance through a Trusted Publisher, so installs no longer have to build from the GitHub source.
+
 ## [0.1.0] - 2026-11-14
 
 First public release under the `dsh-fallback-router` name, merging the former
