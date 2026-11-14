@@ -28,7 +28,7 @@
 import { defineConfig } from 'tsdown'
 
 export default defineConfig({
-  name: 'dsh-llm-router',
+  name: 'dsh-fallback-router',
   entry: ['./.build/host/index.js'],
   outDir: 'dist',
   format: ['esm'],

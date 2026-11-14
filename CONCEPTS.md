@@ -1,6 +1,6 @@
 # CONCEPTS
 
-本仓库（dsh-llm-router）领域词汇。供 `{KNOWLEDGE_DIR}` 与 AGENTS.md 引用，避免重复定义。
+本仓库（dsh-fallback-router）领域词汇。供 `{KNOWLEDGE_DIR}` 与 AGENTS.md 引用，避免重复定义。
 
 ## dsh 插件
 

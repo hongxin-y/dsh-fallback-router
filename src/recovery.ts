@@ -25,7 +25,7 @@
  * 6. `close` — an observed completion closes the circuit, only from half-open
  *    (rule 6).
  *
- * @module dsh-llm-router/recovery
+ * @module dsh-fallback-router/recovery
  */
 
 /** Escalation multiplier applied per consecutive failure (rule 2). */

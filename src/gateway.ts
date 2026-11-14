@@ -63,7 +63,7 @@
  * never present-as-undefined (the gateway's result validation rejects
  * undefined values).
  *
- * @module dsh-llm-router/gateway
+ * @module dsh-fallback-router/gateway
  */
 
 import type { Context } from '@deepseek-ai/cordis'
@@ -418,7 +418,7 @@ export class FallbacksConfigGateway extends TypertRemoteService {
    */
   async revertSeed(id: string): Promise<FallbacksRevertResult> {
     if (typeof id !== 'string') {
-      throw new TypeError('dsh-llm-router: seed revert id must be a string')
+      throw new TypeError('dsh-fallback-router: seed revert id must be a string')
     }
     const outcome = await this.seeds.revert(id, this.seedsIo())
     return { ...this.readResult(), outcome }
@@ -663,7 +663,7 @@ function normalizeNamedChains(value: unknown): unknown {
  */
 export function validateConfigPatch(patch: unknown): void {
   if (patch === null || typeof patch !== 'object' || Array.isArray(patch)) {
-    throw new TypeError('dsh-llm-router: configuration patch must be a plain object')
+    throw new TypeError('dsh-fallback-router: configuration patch must be a plain object')
   }
   for (const key of Object.keys(patch)) {
     // Own-key membership, never `in` — `in` walks the prototype chain, so a
@@ -677,7 +677,7 @@ export function validateConfigPatch(patch: unknown): void {
     // strips it, so it is never persisted (plan fallbacks-web-ux-alignment
     // T2).
     if (!Object.hasOwn(CONFIG_KEYS, key) && !LEGACY_KEYS.has(key)) {
-      throw new Error(`dsh-llm-router: unknown config key "${key}"`)
+      throw new Error(`dsh-fallback-router: unknown config key "${key}"`)
     }
     // qc2 S-1: the `roles` object is itself a patch boundary — schemastery
     // retains unknown NESTED keys too, so a `roles.default` (or any other
@@ -689,7 +689,7 @@ export function validateConfigPatch(patch: unknown): void {
       if (roles !== null && typeof roles === 'object' && !Array.isArray(roles)) {
         for (const nestedKey of Object.keys(roles)) {
           if (!Object.hasOwn(ROLES_KEYS, nestedKey)) {
-            throw new Error(`dsh-llm-router: unknown config key "roles.${nestedKey}"`)
+            throw new Error(`dsh-fallback-router: unknown config key "roles.${nestedKey}"`)
           }
         }
       }
@@ -719,7 +719,7 @@ export function validateConfigPatch(patch: unknown): void {
       const chain = (patch as Record<string, unknown>)[key]
       if (chain !== null && chain !== undefined && (!Array.isArray(chain) || !isAllDayConforming(chain))) {
         throw new Error(
-          'dsh-llm-router: rootChain must end with exactly one official model (deepseek-official/deepseek-flash or deepseek-official/deepseek-v4-pro)',
+          'dsh-fallback-router: rootChain must end with exactly one official model (deepseek-official/deepseek-flash or deepseek-official/deepseek-v4-pro)',
         )
       }
     }
@@ -741,87 +741,87 @@ export function validateConfigPatch(patch: unknown): void {
  * `describeRow` (load stays warn-not-crash, P6).
  */
 function validateNamedChainsPatch(value: unknown): void {
-  if (!Array.isArray(value)) throw new Error('dsh-llm-router: namedChains must be an array')
+  if (!Array.isArray(value)) throw new Error('dsh-fallback-router: namedChains must be an array')
   const ids = new Set<string>()
   const names = new Set<string>()
   value.forEach((item, index) => {
     const at = `namedChains[${index}]`
-    if (item === null || typeof item !== 'object' || Array.isArray(item)) throw new Error(`dsh-llm-router: ${at} must be a plain object`)
+    if (item === null || typeof item !== 'object' || Array.isArray(item)) throw new Error(`dsh-fallback-router: ${at} must be a plain object`)
     const row = item as Record<string, unknown>
     for (const key of Object.keys(row)) {
-      if (!['id', 'name', 'chain'].includes(key)) throw new Error(`dsh-llm-router: unknown config key "${at}.${key}"`)
+      if (!['id', 'name', 'chain'].includes(key)) throw new Error(`dsh-fallback-router: unknown config key "${at}.${key}"`)
     }
-    if (typeof row.id !== 'string' || !ROLE_ID_PATTERN.test(row.id) || row.id === 'auto') throw new Error(`dsh-llm-router: ${at}.id must match /^[a-z0-9-]{1,32}$/ and cannot be "auto"`)
-    if (ids.has(row.id)) throw new Error(`dsh-llm-router: duplicate named chain id "${row.id}"`)
+    if (typeof row.id !== 'string' || !ROLE_ID_PATTERN.test(row.id) || row.id === 'auto') throw new Error(`dsh-fallback-router: ${at}.id must match /^[a-z0-9-]{1,32}$/ and cannot be "auto"`)
+    if (ids.has(row.id)) throw new Error(`dsh-fallback-router: duplicate named chain id "${row.id}"`)
     ids.add(row.id)
-    if (typeof row.name !== 'string' || row.name.trim() === '') throw new Error(`dsh-llm-router: ${at}.name must be a non-empty string`)
+    if (typeof row.name !== 'string' || row.name.trim() === '') throw new Error(`dsh-fallback-router: ${at}.name must be a non-empty string`)
     const label = row.name.trim().toLowerCase()
-    if (names.has(label)) throw new Error(`dsh-llm-router: duplicate named chain name "${row.name}"`)
+    if (names.has(label)) throw new Error(`dsh-fallback-router: duplicate named chain name "${row.name}"`)
     names.add(label)
-    if (!Array.isArray(row.chain) || row.chain.length === 0) throw new Error(`dsh-llm-router: ${at}.chain must contain at least one selector`)
+    if (!Array.isArray(row.chain) || row.chain.length === 0) throw new Error(`dsh-fallback-router: ${at}.chain must contain at least one selector`)
     row.chain.forEach((selector, selectorIndex) => {
-      if (typeof selector !== 'string' || selector.trim() === '') throw new Error(`dsh-llm-router: ${at}.chain[${selectorIndex}] must be a non-empty selector`)
-      try { parseSelector(selector) } catch (error) { throw new Error(`dsh-llm-router: invalid selector in ${at}.chain[${selectorIndex}]: ${(error as Error).message}`) }
+      if (typeof selector !== 'string' || selector.trim() === '') throw new Error(`dsh-fallback-router: ${at}.chain[${selectorIndex}] must be a non-empty selector`)
+      try { parseSelector(selector) } catch (error) { throw new Error(`dsh-fallback-router: invalid selector in ${at}.chain[${selectorIndex}]: ${(error as Error).message}`) }
     })
   })
 }
 
 function validateTimeSlotsPatch(rows: unknown): void {
   if (!Array.isArray(rows)) {
-    throw new Error('dsh-llm-router: timeSlots must be an array of slot rows')
+    throw new Error('dsh-fallback-router: timeSlots must be an array of slot rows')
   }
   const seenPresets = new Set<string>()
   rows.forEach((row, index) => {
     const at = `timeSlots[${index}]`
     if (row === null || typeof row !== 'object' || Array.isArray(row)) {
-      throw new Error(`dsh-llm-router: ${at} must be a plain object`)
+      throw new Error(`dsh-fallback-router: ${at} must be a plain object`)
     }
     const record = row as Record<string, unknown>
     for (const nestedKey of Object.keys(record)) {
       if (!Object.hasOwn(SLOT_ROW_KEYS, nestedKey)) {
-        throw new Error(`dsh-llm-router: unknown config key "${at}.${nestedKey}"`)
+        throw new Error(`dsh-fallback-router: unknown config key "${at}.${nestedKey}"`)
       }
     }
     if (record.kind === 'preset') {
       const preset = record.preset
       if (typeof preset !== 'string' || !Object.hasOwn(PRESETS, preset)) {
         throw new Error(
-          `dsh-llm-router: ${at}.preset must be one of the four frozen preset ids (got ${JSON.stringify(preset)})`,
+          `dsh-fallback-router: ${at}.preset must be one of the four frozen preset ids (got ${JSON.stringify(preset)})`,
         )
       }
       if (seenPresets.has(preset)) {
-        throw new Error(`dsh-llm-router: ${at} duplicates preset "${preset}" — at most one row per preset`)
+        throw new Error(`dsh-fallback-router: ${at} duplicates preset "${preset}" — at most one row per preset`)
       }
       seenPresets.add(preset)
       if (record.start !== undefined || record.end !== undefined || (Array.isArray(record.days) && record.days.length > 0)) {
         throw new Error(
-          `dsh-llm-router: ${at} preset "${preset}" cannot carry start/end/days — preset windows are frozen code constants`,
+          `dsh-fallback-router: ${at} preset "${preset}" cannot carry start/end/days — preset windows are frozen code constants`,
         )
       }
       if (record.name !== undefined) {
-        throw new Error(`dsh-llm-router: ${at} preset "${preset}" cannot carry a name — preset rows are named by the frozen label`)
+        throw new Error(`dsh-fallback-router: ${at} preset "${preset}" cannot carry a name — preset rows are named by the frozen label`)
       }
     } else if (record.kind === 'custom') {
       const { start, end } = record
       if (typeof start !== 'string' || typeof end !== 'string' || !SLOT_HHMM_RE.test(start) || !SLOT_HHMM_RE.test(end)) {
         throw new Error(
-          `dsh-llm-router: ${at} custom row requires HH:mm start and end (got ${JSON.stringify(start)}-${JSON.stringify(end)})`,
+          `dsh-fallback-router: ${at} custom row requires HH:mm start and end (got ${JSON.stringify(start)}-${JSON.stringify(end)})`,
         )
       }
       if (record.days !== undefined) {
         if (!Array.isArray(record.days) || record.days.some(day => !Number.isInteger(day) || day < 0 || day > 6)) {
-          throw new Error(`dsh-llm-router: ${at}.days must be an array of integers 0–6`)
+          throw new Error(`dsh-fallback-router: ${at}.days must be an array of integers 0–6`)
         }
       }
       if (record.name !== undefined && typeof record.name !== 'string') {
-        throw new Error(`dsh-llm-router: ${at}.name must be a string`)
+        throw new Error(`dsh-fallback-router: ${at}.name must be a string`)
       }
     } else {
-      throw new Error(`dsh-llm-router: ${at}.kind must be "preset" or "custom" (got ${JSON.stringify(record.kind)})`)
+      throw new Error(`dsh-fallback-router: ${at}.kind must be "preset" or "custom" (got ${JSON.stringify(record.kind)})`)
     }
     const chain = record.chain
     if (!Array.isArray(chain) || chain.length === 0 || chain.some(entry => typeof entry !== 'string')) {
-      throw new Error(`dsh-llm-router: ${at}.chain must be a non-empty string array`)
+      throw new Error(`dsh-fallback-router: ${at}.chain must be a non-empty string array`)
     }
   })
 }
@@ -839,13 +839,13 @@ function validateTimeSlotsPatch(rows: unknown): void {
  */
 export function fallbacksTypertContribution(): TypertContribution {
   return {
-    package: 'dsh-llm-router',
+    package: 'dsh-fallback-router',
     face: 'host',
     schemas: [],
     model: { services: [], events: [], objects: [] },
     invocations: [
       {
-        id: 'dsh-llm-router#fallbacks/get',
+        id: 'dsh-fallback-router#fallbacks/get',
         service: 'fallbacks',
         namespace: 'fallbacks',
         method: 'get',
@@ -854,7 +854,7 @@ export function fallbacksTypertContribution(): TypertContribution {
         result: { mode: 'src-json' },
       },
       {
-        id: 'dsh-llm-router#fallbacks/set',
+        id: 'dsh-fallback-router#fallbacks/set',
         service: 'fallbacks',
         namespace: 'fallbacks',
         method: 'set',
@@ -865,7 +865,7 @@ export function fallbacksTypertContribution(): TypertContribution {
         result: { mode: 'src-json' },
       },
       {
-        id: 'dsh-llm-router#fallbacks/reset',
+        id: 'dsh-fallback-router#fallbacks/reset',
         service: 'fallbacks',
         namespace: 'fallbacks',
         method: 'reset',
@@ -878,7 +878,7 @@ export function fallbacksTypertContribution(): TypertContribution {
         // hyphenated endpoint name, `implementation` aliases the actual
         // service member `revertSeed` (the typertGateway dispatches through
         // `implementation ?? method`).
-        id: 'dsh-llm-router#fallbacks/revert-seed',
+        id: 'dsh-fallback-router#fallbacks/revert-seed',
         service: 'fallbacks',
         namespace: 'fallbacks',
         method: 'revert-seed',
@@ -893,7 +893,7 @@ export function fallbacksTypertContribution(): TypertContribution {
         // Explicit allowlist sync (plan role-chain-allowlist-visibility T1):
         // the only allowlist write face — user-clicked, never silent. Same
         // hyphenated-method / implementation-alias shape as revert-seed.
-        id: 'dsh-llm-router#fallbacks/sync-allowlist',
+        id: 'dsh-fallback-router#fallbacks/sync-allowlist',
         service: 'fallbacks',
         namespace: 'fallbacks',
         method: 'sync-allowlist',

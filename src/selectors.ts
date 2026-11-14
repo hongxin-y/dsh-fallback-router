@@ -8,7 +8,7 @@
  * the catchable "config warning" path; warn-and-continue lives in Task 3.
  * These modules never crash on their own.
  *
- * @module dsh-llm-router/selectors
+ * @module dsh-fallback-router/selectors
  */
 
 /** A parsed selector: `provider` + optional `model` (`undefined` = wildcard). */

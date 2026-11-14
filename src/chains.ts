@@ -33,7 +33,7 @@
  * than the failing model's cannot fit the request either
  * ({@link fitsContextWindow}; unknown windows keep the candidate).
  *
- * @module dsh-llm-router/chains
+ * @module dsh-fallback-router/chains
  */
 
 import { INHERIT_ROLE_ID, type FallbacksRole } from './config.ts'

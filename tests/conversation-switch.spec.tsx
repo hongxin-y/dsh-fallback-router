@@ -325,7 +325,7 @@ describe('conversation switch registration (D1 definition + D2 keyed seat)', () 
     // general.item keeps the list shape.
     const cards = slotsLedger['plugins.bundle.config'] ?? []
     expect(cards).toHaveLength(1)
-    expect(cards[0].options.key).toBe('dsh-llm-router')
+    expect(cards[0].options.key).toBe('dsh-fallback-router')
     expect(cards[0].options.id).toBeUndefined()
     expect(cards[0].options).not.toHaveProperty('order')
     const rows = slotsLedger['settings.general.item'] ?? []

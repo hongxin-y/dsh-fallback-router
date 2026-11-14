@@ -1,6 +1,6 @@
 /**
  * Client bundle build: emits the closure-factory CJS artifact the dsh web
- * loader consumes — `window.__ModuleLoader__.load({ id: 'dsh-llm-router',
+ * loader consumes — `window.__ModuleLoader__.load({ id: 'dsh-fallback-router',
  * factory: (require) => { … return module.exports; } })`. Externals resolve
  * through the loader module table (the platform seed entries — in 0.1.2 the
  * former runtime exemption is folded into the `@deepseek-ai/dsh-client-store`
@@ -42,7 +42,7 @@ import { build } from 'tsdown'
 import { basename, dirname, join, resolve } from 'node:path'
 import { existsSync, readFileSync } from 'node:fs'
 
-const ID = 'dsh-llm-router'
+const ID = 'dsh-fallback-router'
 const ENTRY = 'src/client/index.ts'
 const OUT_DIR = 'dist/client'
 const OUT_FILE = 'index.js'

@@ -1543,7 +1543,7 @@ describe('syncAllowlist (explicit host-allowlist write)', () => {
     const invocation = fallbacksTypertContribution().invocations
       .find(entry => entry.method === 'sync-allowlist')
     expect(invocation).toMatchObject({
-      id: 'dsh-llm-router#fallbacks/sync-allowlist',
+      id: 'dsh-fallback-router#fallbacks/sync-allowlist',
       service: 'fallbacks',
       namespace: 'fallbacks',
       implementation: 'syncAllowlist',

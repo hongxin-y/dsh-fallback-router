@@ -23,8 +23,8 @@ A third class — the legacy `fallbacks/switch` event type — is **not** repair
 The tool is run from this repository (clone + `pnpm install`). Its sources do ship in the npm tarball, but there is no runnable entry there — no `bin` is registered and `tsx` is a dev dependency — so a registry install cannot run it. It is a **read-only report by default**: it walks a session root, classifies every pre-V3 log into exactly one refusal class and prints per-class counts. Nothing is written unless `--apply` is given.
 
 ```sh
-git clone https://github.com/hongxin-y/dsh-llm-router.git
-cd dsh-llm-router
+git clone https://github.com/hongxin-y/dsh-fallback-router.git
+cd dsh-fallback-router
 pnpm install
 pnpm repair:session-logs                             # read-only report (the default)
 pnpm repair:session-logs -- --root ~/.dsh/sessions   # explicit session root

@@ -74,7 +74,7 @@ describe('client slot registration', () => {
     applyClient(ctx)
     const card = registered.find((entry) => entry.name === 'plugins.bundle.config')
     expect(card).toBeDefined()
-    expect(card!.key).toBe('dsh-llm-router')
+    expect(card!.key).toBe('dsh-fallback-router')
     expect(card!.id).toBeUndefined()
   })
 })

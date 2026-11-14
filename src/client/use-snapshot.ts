@@ -15,7 +15,7 @@
  * snapshot-selector contract (selector + optional equality) is preserved
  * verbatim without importing from a package that no longer exposes it.
  *
- * @module dsh-llm-router/use-snapshot
+ * @module dsh-fallback-router/use-snapshot
  */
 import { useSyncExternalStoreWithSelector } from 'use-sync-external-store/shim/with-selector'
 import type { HostObservable, SnapshotSelectorHook } from '@deepseek-ai/dsh-client-ui-slots'

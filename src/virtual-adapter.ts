@@ -35,7 +35,7 @@
  * `imageRequestPricing` mirror the same head for the host-captured retry
  * policy and the token meter — also never throwing.
  *
- * @module dsh-llm-router/virtual-adapter
+ * @module dsh-fallback-router/virtual-adapter
  */
 
 import type { Context } from '@deepseek-ai/cordis'

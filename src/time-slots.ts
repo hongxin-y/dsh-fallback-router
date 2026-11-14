@@ -12,7 +12,7 @@
  * skipped; a legacy non-empty non-conforming `rootChain` keeps the
  * legacy failure walk verbatim (P6).
  *
- * @module dsh-llm-router/time-slots
+ * @module dsh-fallback-router/time-slots
  */
 
 import type { FallbacksConfig } from './config.ts'
@@ -267,7 +267,7 @@ export function isAllDayConforming(chain: readonly string[]): boolean {
 }
 
 /**
- * dsh-llm-router: does the all-day layer take effect for THIS config?
+ * dsh-fallback-router: does the all-day layer take effect for THIS config?
  *
  * A config authored through model profiles has its all-day chain COMPILED
  * (`compileRouter`), so the tail is whatever the active profile's fallback

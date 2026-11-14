@@ -8,7 +8,7 @@
  * layout — no host code involved:
  *
  * 1. `./locale/*.json` is covered by the `exports` map — proven via Node
- *    self-reference resolution (`require.resolve('dsh-llm-router/locale/
+ *    self-reference resolution (`require.resolve('dsh-fallback-router/locale/
  *    en.json')` from inside the package resolves ONLY when `exports` carries
  *    the subpath; self-reference requires an `exports` field).
  * 2. The `icon` manifest entry points at a real file inside the package
@@ -42,7 +42,7 @@ describe('plugin meta + icon (readPluginMeta contract)', () => {
     // `./locale/*.json` entry throws ERR_PACKAGE_PATH_NOT_EXPORTED here,
     // which is exactly the host-side resolution failure this pin guards.
     for (const locale of ['en', 'zh']) {
-      const resolved = requireSelf.resolve(`dsh-llm-router/locale/${locale}.json`)
+      const resolved = requireSelf.resolve(`dsh-fallback-router/locale/${locale}.json`)
       expect(resolved).toBe(join(REPO_ROOT, 'locale', `${locale}.json`))
     }
   })

@@ -1,7 +1,7 @@
 /**
  * The model-profile layer: this plugin's PRIMARY authoring unit.
  *
- * dsh-llm-router was authored around one global `rootChain` plus a set of
+ * dsh-fallback-router was authored around one global `rootChain` plus a set of
  * time-slot rows. The router inverts that: the user declares **model
  * profiles**, and every routing decision derives from them. One profile
  * carries its own
@@ -26,7 +26,7 @@
  * (types included) — the client bundle imports it for the card's own
  * validation and must never reach schemastery.
  *
- * @module dsh-llm-router/models
+ * @module dsh-fallback-router/models
  */
 
 import { OFFICIAL_FLASH, PRESET_IDS, resolveSlotState } from './time-slots.ts'

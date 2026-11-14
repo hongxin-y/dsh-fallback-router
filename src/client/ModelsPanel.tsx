@@ -1,6 +1,6 @@
 /**
  * 模型配置 (model profiles) panel — the ONLY authoring surface of
- * dsh-llm-router.
+ * dsh-fallback-router.
  *
  * Every row is a MODEL CONFIGURATION. Two shapes exist:
  *
@@ -28,7 +28,7 @@
  * deliberately NOT editable here — it is either compiled from these rows or
  * left at whatever the config already carries.
  *
- * @module dsh-llm-router/client/ModelsPanel
+ * @module dsh-fallback-router/client/ModelsPanel
  */
 
 import { useEffect, useMemo, useState, type ReactNode } from 'react'

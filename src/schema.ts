@@ -31,7 +31,7 @@
  * the `Meta` augmentation below declares the field the peer range admits
  * at its upper end.
  *
- * @module dsh-llm-router/schema
+ * @module dsh-fallback-router/schema
  */
 
 import z from '@deepseek-ai/schemastery'
@@ -47,7 +47,7 @@ declare module '@deepseek-ai/schemastery' {
 }
 
 const configSchema = z.object({
-  // ── the authored model layer (dsh-llm-router) ───────────────────────────
+  // ── the authored model layer (dsh-fallback-router) ───────────────────────────
   // Every row is a MODEL CONFIGURATION: a route, the time windows it is active
   // in, how it falls back (official model / loop over the other rows / none)
   // and which failures it reacts to. `rootChain` / `timeSlots` below are

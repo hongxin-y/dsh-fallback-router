@@ -86,7 +86,7 @@
  * shape, or any throwing bookkeeping degrades to the native path with at most
  * ONE contained debug log — a dispatch is never affected.
  *
- * @module dsh-llm-router/subagents-seam
+ * @module dsh-fallback-router/subagents-seam
  */
 
 import { randomUUID } from 'node:crypto'

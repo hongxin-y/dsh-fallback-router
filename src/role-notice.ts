@@ -68,7 +68,7 @@
  * and the decision is returned UNCHANGED — a step is never broken, and no
  * partial row is ever published.
  *
- * @module dsh-llm-router/role-notice
+ * @module dsh-fallback-router/role-notice
  */
 
 import type { Context } from '@deepseek-ai/cordis'

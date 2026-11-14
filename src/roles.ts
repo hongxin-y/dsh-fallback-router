@@ -46,7 +46,7 @@
  * `.mstar/iterations/iter-20260811-fallbacks-mount-only/guides/
  * role-and-model-selection-exploration.md` (Role section).
  *
- * @module dsh-llm-router/roles
+ * @module dsh-fallback-router/roles
  */
 
 import { INHERIT_ROLE_ID, type FallbacksRoleRule } from './config.ts'

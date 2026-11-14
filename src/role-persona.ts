@@ -37,7 +37,7 @@
  * throw — including a failed fiber activation — is contained to ONE debug line
  * plus the record's sticky `personaNotApplied`.
  *
- * @module dsh-llm-router/role-persona
+ * @module dsh-fallback-router/role-persona
  */
 
 import type { Context, Fiber } from '@deepseek-ai/cordis'

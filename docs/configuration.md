@@ -436,7 +436,7 @@ This plugin **does not modify** llm-retry's or providers' `retryPolicy`: fallbac
 
 ### Agent presets (plugin composition)
 
-Agent **presets** are a dsh mechanism for composing plugins — a declarative child-plugin entry list applied as a set, carrying **no** model fields of their own. The fallbacks plugin needs no preset-specific configuration: a preset that includes the `dsh-llm-router` plugin row gives that preset's sessions the same chains/roles configured for the plugin — the fallback applies **wherever the plugin's row is mounted**. Two caveats:
+Agent **presets** are a dsh mechanism for composing plugins — a declarative child-plugin entry list applied as a set, carrying **no** model fields of their own. The fallbacks plugin needs no preset-specific configuration: a preset that includes the `dsh-fallback-router` plugin row gives that preset's sessions the same chains/roles configured for the plugin — the fallback applies **wherever the plugin's row is mounted**. Two caveats:
 
 - **A user preset override replaces the entire child list** (no merge): a preset that omits the fallbacks row silently unmounts the plugin for sessions using that preset. Restate every plugin row you want to keep.
 - **Preset-scoped chain configs are possible by mounting the row inside a preset**: the plugin row's `config:` overrides in the preset composition produce a chain configuration that applies to that preset's sessions only (patch rows replace the whole `config`, so restate every field).

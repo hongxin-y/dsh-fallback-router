@@ -10,7 +10,7 @@
  * `switchCount` / `maxSwitchesPerStep` judgement belongs to the caller
  * (Task 3) — this task only provides the data structure.
  *
- * @module dsh-llm-router/cooldown
+ * @module dsh-fallback-router/cooldown
  */
 
 /**

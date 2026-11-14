@@ -10,7 +10,7 @@
  * imports, and a single shared literal is what keeps the two halves from
  * drifting into a silent "no pill".
  *
- * @module dsh-llm-router/role-projection-key
+ * @module dsh-fallback-router/role-projection-key
  */
 
 /**

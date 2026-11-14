@@ -40,7 +40,7 @@
  *   trimmed-id → declared-raw-id map, the same canonicalization the resolver
  *   uses.
  *
- * @module dsh-llm-router/automatch
+ * @module dsh-fallback-router/automatch
  */
 
 import { createUserMessage, type GenerateOptions, type StreamChunk } from '@deepseek-ai/dsh-llm'

@@ -12,7 +12,7 @@
  * The module is type-only — the augmentation is erased at runtime; the
  * plugin's runtime behavior lives in `src/index.ts`.
  *
- * @module dsh-llm-router/events
+ * @module dsh-fallback-router/events
  */
 
 // The `llm/retry` / `llm/retry-started` SessionEventMap entries are
@@ -53,7 +53,7 @@ export interface FallbacksSwitchEventData {
 
 declare module '@deepseek-ai/dsh-session/types' {
   interface SessionEventMap {
-    /** Historical, append-only record of one provider/model switch decided by dsh-llm-router (no longer written — issue #52 stop-write). */
+    /** Historical, append-only record of one provider/model switch decided by dsh-fallback-router (no longer written — issue #52 stop-write). */
     'fallbacks/switch': FallbacksSwitchEventData
   }
 }

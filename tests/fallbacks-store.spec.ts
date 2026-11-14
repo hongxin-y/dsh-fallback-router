@@ -288,7 +288,7 @@ describe('parseFallbacksConfig (descriptor read, redactSecrets face)', () => {
     // read keeps only declared keys — the removed switch is not one.
     const config: FallbacksConfig = {
       triggerCodes: ['AUTH'],
-      // dsh-llm-router: the model-profile layer is part of the authored
+      // dsh-fallback-router: the model-profile layer is part of the authored
       // config, so a "complete" fixture carries it (empty here).
       models: [],
       providers: [],

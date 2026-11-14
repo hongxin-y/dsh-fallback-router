@@ -9,7 +9,7 @@ import { apply, Config, name } from '../src/index.ts'
 import { apply as clientApply } from '../src/client/index.ts'
 import type { FallbacksConfig } from '../src/config.ts'
 
-describe('dsh-llm-router skeleton', () => {
+describe('dsh-fallback-router skeleton', () => {
   it('exposes the bundle patch row id', () => {
     expect(name).toBe('llm-router')
   })

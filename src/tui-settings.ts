@@ -25,7 +25,7 @@
  * stages a `clear` (the field re-inherits the composition layer). The `tz`
  * text field validates its IANA id the same way the runtime resolves it.
  *
- * @module dsh-llm-router/tui-settings
+ * @module dsh-fallback-router/tui-settings
  */
 
 import type { Context } from '@deepseek-ai/cordis'

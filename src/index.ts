@@ -1,5 +1,5 @@
 /**
- * dsh-llm-router host half (plan Task 3: settings + waterfall + state
+ * dsh-fallback-router host half (plan Task 3: settings + waterfall + state
  * machine + events).
  *
  * Cordis function plugin mounted by the profile bundle patch row
@@ -34,7 +34,7 @@
  *   `agent/status` idle prunes per-step state defensively, plugin dispose
  *   clears everything (spec §6 — no residual state).
  *
- * @module dsh-llm-router
+ * @module dsh-fallback-router
  */
 
 import { createRequire } from 'node:module'
@@ -232,7 +232,7 @@ export type { ChainHeadSource, EffectiveChainHead } from './state.ts'
 // --- Library API re-exports (plan fallbacks-consumer-api T1) ---
 // The full fallback-runtime surface — role resolution, chain resolution,
 // config validation, selector parsing — re-exported from the package root so
-// consumers can `import { resolveRole } from 'dsh-llm-router'`. Each block
+// consumers can `import { resolveRole } from 'dsh-fallback-router'`. Each block
 // mirrors its submodule's export surface exactly; symbols also used
 // internally by apply() keep their local imports (the re-export refers to
 // the same binding — no duplicate definitions).
@@ -296,7 +296,7 @@ export {
 // --- Bundled preset roles (plan fallbacks-preset-roles T3) ---
 // The 5 omp-style bundled preset role declarations re-exported from the
 // package root so library consumers can `import { presetRoles } from
-// 'dsh-llm-router'` and `declareSeeds(presetRoles)` — the SAME data
+// 'dsh-fallback-router'` and `declareSeeds(presetRoles)` — the SAME data
 // source apply()'s self-declaration fires (derivation: omp coding-agent
 // agent prompts, snapshot 2026-08-16; frozen text = spec §9.2). The
 // self-declare is the ONLY declare labeled `bundled` (internal marker at

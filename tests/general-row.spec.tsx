@@ -289,7 +289,7 @@ describe('GeneralFallbacksRow registration (settings.general.item)', () => {
     // keyed loader ignores the extra id).
     const cards = ledger['plugins.bundle.config'] ?? []
     expect(cards).toHaveLength(1)
-    expect(cards[0].options.key).toBe('dsh-llm-router')
+    expect(cards[0].options.key).toBe('dsh-fallback-router')
     expect(cards[0].options.id).toBeUndefined()
     expect(cards[0].options).not.toHaveProperty('order')
 

@@ -35,7 +35,7 @@
  *
  * Never throws; malformed source shapes yield `undefined`, not routes.
  *
- * @module dsh-llm-router/authorized-route
+ * @module dsh-fallback-router/authorized-route
  */
 
 import type { PolicyRoute } from './subagent-policy.ts'

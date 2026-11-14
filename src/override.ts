@@ -12,7 +12,7 @@
  * same rule applies on every override path whether the subagent routing
  * policy is on or off (spec D3). Never throws.
  *
- * @module dsh-llm-router/override
+ * @module dsh-fallback-router/override
  */
 
 import type { LlmCallConfig } from '@deepseek-ai/dsh-llm'

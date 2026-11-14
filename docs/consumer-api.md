@@ -1,17 +1,17 @@
 # Consumer Contract (Consumer API)
 
-This document defines the **consumer surface** `dsh-llm-router` exposes: (1) the package-root library API (`import { … } from 'dsh-llm-router'`); (2) the named cordis service (`ctx.get('llm-router')`). No logic is copied between the two: the service's four legacy callables are the same function references as the library re-exports, its three role-seed methods are per-apply closures over the same `FallbacksSeedManager` the gateway uses, and `getAgentRole` reads the dispatch seam's own per-child record (single point of truth — see [Lifecycle](#lifecycle) and [Dispatch role getter](#dispatch-role-getter)). Installation → [docs/install.md](install.md); release process → [docs/release.md](release.md).
+This document defines the **consumer surface** `dsh-fallback-router` exposes: (1) the package-root library API (`import { … } from 'dsh-fallback-router'`); (2) the named cordis service (`ctx.get('llm-router')`). No logic is copied between the two: the service's four legacy callables are the same function references as the library re-exports, its three role-seed methods are per-apply closures over the same `FallbacksSeedManager` the gateway uses, and `getAgentRole` reads the dispatch seam's own per-child record (single point of truth — see [Lifecycle](#lifecycle) and [Dispatch role getter](#dispatch-role-getter)). Installation → [docs/install.md](install.md); release process → [docs/release.md](release.md).
 
 > **Contract boundary**: this document describes **this package's** export surface and lifecycle. **A valid package contract ≠ an integrated downstream repository** — whether integration is complete must be judged by the actual wiring in the target repository.
 
 ## Library API (package-root re-export)
 
-`src/index.ts` re-exports the runtime functions, value constants, and types uniformly from the package root, so consumers `import { … } from 'dsh-llm-router'` directly without reaching into submodule paths.
+`src/index.ts` re-exports the runtime functions, value constants, and types uniformly from the package root, so consumers `import { … } from 'dsh-fallback-router'` directly without reaching into submodule paths.
 
 ### Minimal example
 
 ```ts
-import { resolveRole, resolveChain, validateFallbacksConfig } from 'dsh-llm-router'
+import { resolveRole, resolveChain, validateFallbacksConfig } from 'dsh-fallback-router'
 
 // resolveRole: matches roles.rules in origin/provider/model order → role id (no match → 'inherit')
 const role = resolveRole(agent, config.roles.rules, roleIds)
@@ -61,7 +61,7 @@ validateFallbacksConfig(config, logger)
 Reuse it through any seed face:
 
 ```ts
-import { presetRoles } from 'dsh-llm-router'
+import { presetRoles } from 'dsh-fallback-router'
 
 // (a) service face (plugin applied): one line, same payload as the self-declaration
 const fb = ctx.get('llm-router')

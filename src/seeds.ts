@@ -40,7 +40,7 @@
  * AC-1). Compute → write → commit registry: a failed write throws and
  * leaves the registry unchanged (retry-safe).
  *
- * @module dsh-llm-router/seeds
+ * @module dsh-fallback-router/seeds
  */
 
 import {

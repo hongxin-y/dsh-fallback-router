@@ -2,10 +2,10 @@
 
 ## Supported versions
 
-`dsh-llm-fallbacks` is a single, continuously released npm package. Only the
+`dsh-fallback-router` is a single, continuously released npm package. Only the
 **latest published version** is supported; older versions are not maintained
 and do not receive security fixes. Please reproduce a report against the latest
-published version (`dsh-llm-fallbacks` on npm) before sending it.
+published version (`dsh-fallback-router` on npm) before sending it.
 
 ## Reporting a vulnerability
 
@@ -26,7 +26,7 @@ investigated. There is no bug-bounty program.
 
 To make a report actionable, please include:
 
-- the affected version — the npm version (`dsh-llm-fallbacks@<version>`) or the
+- the affected version — the npm version (`dsh-fallback-router@<version>`) or the
   commit SHA you built from;
 - your environment and front end — the dsh **web** profile or the **dsh-tui**
   terminal profile, with the dsh version if known;
@@ -59,7 +59,7 @@ session logs that contain authorization headers.
 - vulnerabilities in the **dsh host itself** or in the `@deepseek-ai/*`
   packages — those belong upstream, with the DeepSeek Harness maintainers;
 - general support questions, setup problems, and feature requests — take those
-  to [the issue tracker](https://github.com/hongxin-y/dsh-llm-router/issues)
+  to [the issue tracker](https://github.com/hongxin-y/dsh-fallback-router/issues)
   instead.
 
 ## Disclosure

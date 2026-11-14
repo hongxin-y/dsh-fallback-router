@@ -31,7 +31,7 @@
  * registers the schemastery schema (see `./schema.ts`) with
  * `installSettingsSection` under the `fallbacks` settings namespace.
  *
- * @module dsh-llm-router/config
+ * @module dsh-fallback-router/config
  */
 
 import { parseSelector } from './selectors.ts'

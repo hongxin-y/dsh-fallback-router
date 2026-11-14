@@ -130,7 +130,7 @@ jobs:
           echo "Resolved npm dist-tag: ${TAG} (version ${VERSION})"
           echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
 
-      # Publishing to npm is OFF by default: the registry name `dsh-llm-router`
+      # Publishing to npm is OFF by default: the registry name `dsh-fallback-router`
       # already belongs to an unrelated project, so this package can only be
       # installed from the GitHub source. Set the repository variable
       # NPM_PUBLISH=true (after renaming the package and configuring a Trusted

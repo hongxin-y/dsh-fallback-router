@@ -23,7 +23,7 @@
  * deterministic default (`zh`, this repo's primary language); both
  * dictionaries are unit-tested.
  *
- * @module dsh-llm-router/commands
+ * @module dsh-fallback-router/commands
  */
 
 import type { CommandDefinition, CommandInvocation, CommandResult } from '@deepseek-ai/dsh-commands'

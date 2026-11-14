@@ -1,6 +1,6 @@
 # Verification Record (Profile Installation and Plugin-Config Card Runtime Verification)
 
-This document records the installation / runtime-contract verification already completed for `dsh-llm-router` in **this repo's verification environment (a sandbox-compatible scratch environment)**, plus the verification steps and expected results that **must be executed in the user's real dsh environment**.
+This document records the installation / runtime-contract verification already completed for `dsh-fallback-router` in **this repo's verification environment (a sandbox-compatible scratch environment)**, plus the verification steps and expected results that **must be executed in the user's real dsh environment**.
 
 > **Scope statement**: this repo's verification environment is sandbox-constrained — it **cannot perform any write to a running dsh installation (a real `$DSH_HOME`)**, and it cannot operate the web settings GUI, issue real model calls, or observe across processes. Therefore "Verified" below covers only evidence completable inside the workspace (unit/integration tests, scratch-profile loading and `--dump-config` layer order, the build pipeline); "To be run by the user" lists the real-environment steps and expectations, labeled honestly without overstating the verified scope.
 
@@ -52,22 +52,22 @@ On a **scratch profile inside the workspace** (`DSH_HOME=<plugin-repo>/.dsh-veri
 
 ```
 $ dsh plugin --profile verify add <plugin-repo>
-  → profile initialized; `dsh.profile.bundles` = ["@deepseek-ai/dsh-base", "dsh-llm-router"]
+  → profile initialized; `dsh.profile.bundles` = ["@deepseek-ai/dsh-base", "dsh-fallback-router"]
     (reconcile appends to the end of the list, matching the "add appends by default" semantics)
 $ dsh --profile verify --dump-config
   # == @deepseek-ai/dsh-base
   - id: llm-retry            ← llm-retry lives in the dsh-base layer
   ...
-  # == dsh-llm-router
+  # == dsh-fallback-router
   - id: llm-router
-    name: dsh-llm-router
+    name: dsh-fallback-router
     config: {}
 ```
 
 `llm-router` sits as an **independent layer after dsh-base (which contains llm-retry)** — i.e. the waterfall
 registration order satisfies the hard requirement to "intervene after llm-retry" (corresponding to the bundle layer
 order section of [docs/install.md](docs/install.md); the real web profile's layer order `dsh-base → dsh-web-app → @mstar-harness/dsh
-→(add) dsh-llm-router` works the same way — `add` appends to the end, which suffices).
+→(add) dsh-fallback-router` works the same way — `add` appends to the end, which suffices).
 
 ### 3. Runtime contracts (backed by test evidence)
 
@@ -105,10 +105,10 @@ order section of [docs/install.md](docs/install.md); the real web profile's laye
 cd <plugin-repo>
 pnpm install          # self-build via prepare (pnpm toolchain)
 dsh plugin --profile web add .
-dsh --profile web --dump-config   # the composed tree should end with a # == dsh-llm-router layer
+dsh --profile web --dump-config   # the composed tree should end with a # == dsh-fallback-router layer
 ```
 
-**Expected**: `dsh-llm-router` is appended to the end of `dsh.profile.bundles` (after `@deepseek-ai/dsh-base`);
+**Expected**: `dsh-fallback-router` is appended to the end of `dsh.profile.bundles` (after `@deepseek-ai/dsh-base`);
 in `--dump-config` the `llm-router` layer appears after the dsh-base layer that contains `llm-retry`.
 Then restart the dsh web session so the host half and the client half load.
 

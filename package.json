@@ -1,5 +1,5 @@
 {
-  "name": "dsh-llm-router",
+  "name": "dsh-fallback-router",
   "description": "Model-centric routing for DeepSeek Harness: per-model fallback (official or loop), time windows, per-provider retry and failure rules",
   "keywords": [
     "dsh",
@@ -128,11 +128,11 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/hongxin-y/dsh-llm-router.git"
+    "url": "git+https://github.com/hongxin-y/dsh-fallback-router.git"
   },
-  "homepage": "https://github.com/hongxin-y/dsh-llm-router#readme",
+  "homepage": "https://github.com/hongxin-y/dsh-fallback-router#readme",
   "bugs": {
-    "url": "https://github.com/hongxin-y/dsh-llm-router/issues"
+    "url": "https://github.com/hongxin-y/dsh-fallback-router/issues"
   },
   "author": "hongxin-y",
   "license": "MIT"

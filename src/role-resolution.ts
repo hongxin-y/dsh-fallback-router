@@ -33,7 +33,7 @@
  * Pure ordering logic: no config object and no LLM service inside this
  * module — the LLM is an injectable hook owned by Task 3/4.
  *
- * @module dsh-llm-router/role-resolution
+ * @module dsh-fallback-router/role-resolution
  */
 
 import { INHERIT_ROLE_ID, type FallbacksRoleRule } from './config.ts'

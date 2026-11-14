@@ -37,7 +37,7 @@
  * (`lib/types/index.d.ts:38-80,150-152`); only `.parse` is ever called on the
  * schemas (`lib/index.js:255,305,422`).
  *
- * @module dsh-llm-router/role-projection
+ * @module dsh-fallback-router/role-projection
  */
 
 import type { Context } from '@deepseek-ai/cordis'

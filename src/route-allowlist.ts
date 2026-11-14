@@ -14,7 +14,7 @@
  * plugin-originated route rather than fall back to an unproven one (spec D1).
  * Never throws.
  *
- * @module dsh-llm-router/route-allowlist
+ * @module dsh-fallback-router/route-allowlist
  */
 
 import type { PolicyRoute } from './subagent-policy.ts'

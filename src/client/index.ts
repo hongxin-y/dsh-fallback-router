@@ -1,7 +1,7 @@
 /**
- * dsh-llm-router client half: registers the Fallbacks card into the
+ * dsh-fallback-router client half: registers the Fallbacks card into the
  * Plugins page `plugins.bundle.config` keyed slot (key = bundle package name
- * `dsh-llm-router`).
+ * `dsh-fallback-router`).
  *
  * Wiring (mirrors dsh-advisor):
  * - Registers the `fallbacks` locale dictionaries (zh/en).
@@ -11,7 +11,7 @@
  *   namespace directory), the provider/model catalog, and the switch-history
  *   tail page ride the typed `ctx.remote` namespaces (`ConnectionHandle`
  *   dropped `api`; see `fallbacks-store.ts`).
- * - Registers the `plugins.bundle.config` card `key: 'dsh-llm-router'`
+ * - Registers the `plugins.bundle.config` card `key: 'dsh-fallback-router'`
  *   (bundle package name) with a business-only inject face
  *   ({@link FallbacksSettingsController} + hooks.snapshot); the old
  *   Settings-nav section registration stays removed.
@@ -25,7 +25,7 @@
  *   an optional reflection read (S-g): a host without the session service
  *   leaves the switches face in its empty ready state.
  *
- * @module dsh-llm-router/client
+ * @module dsh-fallback-router/client
  */
 
 import type { Context as ClientContext } from '@deepseek-ai/cordis'
@@ -260,7 +260,7 @@ export function apply(ctx: ClientContext): void {
   // `key` is the settings namespace the card edits, and the card renders in
   // the current Plugins page: `plugins.bundle.config` keyed by bundle package name
   // (was `settings.plugin.item` with key = settings namespace).
-  const BUNDLE_NAME = 'dsh-llm-router'
+  const BUNDLE_NAME = 'dsh-fallback-router'
   ctx.slots.inject('plugins.bundle.config', function* () {
     yield ctx.slots.register({
       name: 'plugins.bundle.config',

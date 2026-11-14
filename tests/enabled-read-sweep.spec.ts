@@ -110,19 +110,19 @@ const ALLOWED_ENABLED_HITS: readonly AllowlistEntry[] = [
   { file: 'gateway.ts', pattern: /^\s*'enabled',\s*$/, count: 1, reason: 'LEGACY_KEYS strip set — the removed key is tolerated on read and stripped from every snapshot/write' },
   { file: 'index.ts', pattern: /'enabled'/, count: 4, reason: "subagent-policy state enum ('enabled' arm) dispatch gates" },
   { file: 'client/fallbacks-store.ts', pattern: /'enabled'/, count: 4, reason: "subagent-policy state enum ('enabled' arm) in the client store parse/view" },
-  // dsh-llm-router: the card is a thin shell around the model panel, so the
+  // dsh-fallback-router: the card is a thin shell around the model panel, so the
   // subagent-policy render gates it used to own no longer exist here.
   // Locale/TUI copy — display strings, not config reads.
   { file: 'client/locales.ts', pattern: /'general\.enabled':/, count: 2, reason: 'badge locale dictionary keys (copy)' },
   { file: 'client/GeneralFallbacksRow.tsx', pattern: /'general\.enabled'/, count: 2, reason: 'badge locale key read + compare (copy)' },
   { file: 'commands.ts', pattern: /configEnabled: 'enabled',/, count: 1, reason: 'the /fallbacks config dump word (copy)' },
-  // dsh-llm-router: the per-provider retry row carries its own `enabled`
+  // dsh-fallback-router: the per-provider retry row carries its own `enabled`
   // boolean (a row-level opt-in for the retry window), NOT the removed
   // config-level master switch — the Plugins-page toggle stays the only
   // master switch, and `isFallbackActive` still gates on content presence.
   { file: 'client/ModelsPanel.tsx', pattern: /row\.enabled/, count: 1, reason: 'per-provider retry row toggle (row-level, not the removed config switch)' },
   { file: 'client/ModelsPanel.tsx', pattern: /enabled: !item\.enabled/, count: 1, reason: 'per-provider retry row toggle write (row-level, not the removed config switch)' },
-  // dsh-llm-router: the retry row's own `enabled` field (the per-provider
+  // dsh-fallback-router: the retry row's own `enabled` field (the per-provider
   // retry opt-in) lives in the model layer — again a row-level flag, never a
   // config-level master switch.
   { file: 'models.ts', pattern: /^\s*enabled: boolean$/, count: 1, reason: 'ProviderRetry row field declaration (row-level opt-in)' },

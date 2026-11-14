@@ -1,6 +1,6 @@
 # Release Guide
 
-How `dsh-llm-router` is versioned and released.
+How `dsh-fallback-router` is versioned and released.
 
 ## Release model
 
@@ -17,9 +17,9 @@ Releases are PR-driven, in two steps:
 
 ## npm publishing is off
 
-The registry name `dsh-llm-router` belongs to an unrelated project, so this package is distributed **from the GitHub source only** (`dsh plugin add github:hongxin-y/dsh-llm-router`). The publish step in `release.yml` is gated behind the repository variable `NPM_PUBLISH` and is skipped by default; tags and GitHub Releases are still created.
+The registry name `dsh-fallback-router` is available and reserved for this package, but nothing has been published to it yet: the publish step in `release.yml` is gated behind the repository variable `NPM_PUBLISH` and is skipped by default, so the package is currently distributed **from the GitHub source only** (`dsh plugin add github:hongxin-y/dsh-fallback-router`). Tags and GitHub Releases are created either way.
 
-To publish under npm later: rename the package (e.g. a scoped name such as `@hongxin-y/dsh-llm-router`), configure a Trusted Publisher for that name in the npm package settings, then set `NPM_PUBLISH=true`. Publishing is tokenless — the workflow exchanges the GitHub OIDC id-token for registry authentication and signs the build with `--provenance`; no `NPM_TOKEN` / `NODE_AUTH_TOKEN` secret is declared anywhere.
+To publish to npm: configure a Trusted Publisher for `dsh-fallback-router` in the npm package settings, then set `NPM_PUBLISH=true`. Publishing is tokenless — the workflow exchanges the GitHub OIDC id-token for registry authentication and signs the build with `--provenance`; no `NPM_TOKEN` / `NODE_AUTH_TOKEN` secret is declared anywhere.
 
 ## Release SOP
 

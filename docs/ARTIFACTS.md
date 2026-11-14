@@ -36,7 +36,7 @@ pnpm build
 ## 新克隆后的顺序
 
 ```powershell
-git clone https://github.com/hongxin-y/dsh-llm-router.git D:\Repos\dsh-llm-router
+git clone https://github.com/hongxin-y/dsh-fallback-router.git D:\Repos\dsh-llm-router
 cd D:\Repos\dsh-llm-router
 pnpm install          # 会重建 node_modules（实体目录，不是 junction）
 pnpm build            # 重建 .build 与 dist

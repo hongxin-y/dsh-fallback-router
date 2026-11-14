@@ -17,7 +17,7 @@
  * plugin-originated route they cannot prove is allowed. This module never
  * throws.
  *
- * @module dsh-llm-router/subagent-policy
+ * @module dsh-fallback-router/subagent-policy
  */
 
 import type { SubagentModelSelectionSettings } from '@deepseek-ai/dsh-tool-subagent/model-selection-settings'

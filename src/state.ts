@@ -25,7 +25,7 @@
  * cooldown deliberately survives idle cleanup so `cooldown-expiry` revert
  * (US-4 / T4 integration) works across turns.
  *
- * @module dsh-llm-router/state
+ * @module dsh-fallback-router/state
  */
 
 import type { FallbackSwitchReason } from './events.ts'

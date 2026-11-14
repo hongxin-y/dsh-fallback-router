@@ -1,4 +1,4 @@
-# dsh-llm-router
+# dsh-fallback-router
 
 [English](README.md) | [中文](README.zh-CN.md)
 
@@ -9,12 +9,12 @@ dsh（DeepSeek Harness）的**模型路由与故障兜底**插件。它是 `dsh-
 ## 〇、安装
 
 ```sh
-dsh plugin --profile desktop add github:hongxin-y/dsh-llm-router
+dsh plugin --profile desktop add github:hongxin-y/dsh-fallback-router
 ```
 
 想锁定代码版本就带上提交号（`#<sha>`）。pnpm ≥ 10 默认不执行 git 依赖的构建脚本，第一次 `add` 可能停在 `ERR_PNPM_GIT_DEP_PREPARE_NOT_ALLOWED`：在 profile 目录（`$DSH_HOME/profiles/desktop`）里跑一次 `pnpm approve-builds`，或把该包写进该 profile 的 `pnpm-workspace.yaml` 允许列表（pnpm 11 用 `allowBuilds`，pnpm 10 用 `onlyBuiltDependencies`），再执行一次。详细步骤、验证与卸载 → [docs/install.md](docs/install.md)。
 
-本包**没有**以这个名字发布到 npm 注册表——npm 上的 `dsh-llm-router` 属于另一个无关项目，请按上面的 GitHub 源安装。
+本包的 npm 包名是 `dsh-fallback-router`，但**还没有发布到注册表**（发布流程里的 npm 步骤默认关闭），请按上面的 GitHub 源安装。
 
 ## 一、核心概念：模型配置
 

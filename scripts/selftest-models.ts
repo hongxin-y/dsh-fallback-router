@@ -1,5 +1,5 @@
 /**
- * Self-test for the model-configuration layer of dsh-llm-router.
+ * Self-test for the model-configuration layer of dsh-fallback-router.
  *
  * Runs OUTSIDE the host: it exercises the pure compilation / rule / detection
  * helpers plus the config bridge (`withCompiledRouter`) that turns authored
@@ -617,10 +617,10 @@ check('an extra route with no level follows the system default', () => {
 
 // --------------------------------------------------------------- shipping ----
 
-check('the shipped package identity is dsh-llm-router', () => {
+check('the shipped package identity is dsh-fallback-router', () => {
   const root = join(dirname(fileURLToPath(import.meta.url)), '..')
   const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')) as { name?: string }
-  assert.equal(pkg.name, 'dsh-llm-router')
+  assert.equal(pkg.name, 'dsh-fallback-router')
 })
 
 console.log(`\nPASS=${String(pass)} FAIL=${String(fail)}`)
