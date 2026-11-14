@@ -27,8 +27,7 @@
     "dist",
     "bundle",
     "locale",
-    "icon.svg",
-    "scripts"
+    "icon.svg"
   ],
   "dsh": {
     "bundle": {
