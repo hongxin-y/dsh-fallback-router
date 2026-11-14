@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Model Router",
+    "description": "Model-centric failover: every model profile carries its own time windows, official or loop fallback and failure rules, plus per-provider retry windows."
+  }
+}
